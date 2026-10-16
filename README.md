@@ -20,3 +20,4 @@ attack success rate with confidence intervals plus a decomposed exposure score.
 ## Layout
 sandbox.py (fake tools + canaries) · oracle.py (deterministic success) · attacks.py + attacks/library.yaml
 · agents.py · runner.py (N trials, Wilson CI, benign baseline) · scorer.py · report.py · scanner.py (static MCP manifest scan)
+# tripwire
