@@ -1,5 +1,13 @@
-out/
-.env
 __pycache__/
-.pytest_cache/
+*.py[cod]
 .venv/
+.env
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+# never commit real attack data or live scope files
+SCOPE.yaml
+lab/canary_data/secrets.txt
