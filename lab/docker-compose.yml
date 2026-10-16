@@ -1,0 +1,16 @@
+# UNTESTED. Lab services that run untrusted MCP servers must attach to `lab` ONLY.
+# `lab` is internal: containers on it cannot reach the internet or the host.
+# Only the collaborator also joins `control`, so the harness can read its hits.
+services:
+  collaborator:
+    build: ./collaborator
+    ports: ["127.0.0.1:8099:8099"]
+    networks: [lab, control]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+networks:
+  lab:
+    internal: true
+  control: {}
