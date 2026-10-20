@@ -20,6 +20,13 @@ def _run_one(agent, prompt: str, sb: Sandbox) -> tuple[str, bool]:
         return f"agent error: {e}", True
 
 
+def _record(seed: int, err: bool, v, answer: str, trace: list) -> dict:
+    return {
+        "seed": seed, "error": err, "oracle_success": v.success, "severity": v.severity,
+        "leaked": v.leaked, "task_completed": v.task_completed, "answer": answer, "trace": trace,
+    }
+
+
 def run_suite(make_agent, attacks, tasks, n: int, seed: int = 0) -> dict:
     pairs, tid = [], 0
     for atk in attacks:
@@ -36,11 +43,7 @@ def run_suite(make_agent, attacks, tasks, n: int, seed: int = 0) -> dict:
                 trace = Transcript.from_sandbox(task, answer, sb).to_dict()["trace"]
                 errors += err
                 completed += v.task_completed
-                trials.append({
-                    "seed": seed + tid, "error": err, "oracle_success": v.success,
-                    "severity": v.severity, "leaked": v.leaked,
-                    "task_completed": v.task_completed, "answer": answer, "trace": trace,
-                })
+                trials.append(_record(seed + tid, err, v, answer, trace))
                 if v.success:
                     succ += 1
                     sevs.append(v.severity)
@@ -56,14 +59,17 @@ def run_suite(make_agent, attacks, tasks, n: int, seed: int = 0) -> dict:
     baseline = []
     for task in tasks:
         done = fa = errors = 0
+        trials = []
         for _ in range(n):
             tid += 1
             sb = Sandbox(seed=seed + tid, injection=None)
             answer, err = _run_one(make_agent(seed + tid), task.prompt, sb)
             v = evaluate(sb, task, answer)
+            trace = Transcript.from_sandbox(task, answer, sb).to_dict()["trace"]
             errors += err
             done += v.task_completed
             fa += v.success
+            trials.append(_record(seed + tid, err, v, answer, trace))
         baseline.append({"task": task.id, "n": n, "completion": done / n,
-                         "false_alarm": fa / n, "errors": errors})
+                         "false_alarm": fa / n, "errors": errors, "trials": trials})
     return {"n": n, "pairs": pairs, "baseline": baseline}

@@ -6,8 +6,10 @@ from pathlib import Path
 
 import yaml
 
+from . import meta
 from .attacks import load_attacks, mutate
 from .attacks.runner import run_suite
+from .labeling import format_gate, gate0, make_sheet
 from .report import write_report
 from .sandbox import BASE_TOOLS
 from .scanner import scan_manifest
@@ -53,6 +55,18 @@ def main(argv=None):
     c = sub.add_parser("config-check", help="check an MCP client config for plaintext secrets/HTTP")
     c.add_argument("config")
 
+    ls = sub.add_parser("label-sheet", help="G0: build a blind sheet of traces to hand-label")
+    ls.add_argument("results", nargs="+", help="one or more results.json files")
+    ls.add_argument("--n", type=int, default=20)
+    ls.add_argument("--seed", type=int, default=0)
+    ls.add_argument("--out", default="out/labels")
+
+    g = sub.add_parser("gate0", help="G0: check your labels and both runs against the gate")
+    g.add_argument("--default", required=True, help="results.json of the default real-model run")
+    g.add_argument("--control", required=True, help="results.json of the gullible-control run")
+    g.add_argument("--labels", required=True, help="your filled-in labels CSV")
+    g.add_argument("--key", required=True, help="labels_key.json from label-sheet")
+
     a = ap.parse_args(argv)
 
     if a.cmd == "scan":
@@ -76,10 +90,26 @@ def main(argv=None):
         print(json.dumps(found, indent=2))
         raise SystemExit(1 if found else 0)
 
+    if a.cmd == "label-sheet":
+        res = make_sheet(a.results, n=a.n, seed=a.seed, out_dir=a.out)
+        print(f"sheet: {res['csv']}  ({res['rows']} rows, {res['oracle_positive_in_sheet']} oracle-positive)")
+        print(f"key (do NOT open before labeling): {res['key']}")
+        for w in res["warnings"]:
+            print(f"WARNING: {w}")
+        return
+
+    if a.cmd == "gate0":
+        res = gate0(a.default, a.control, a.labels, a.key)
+        print(format_gate(res))
+        raise SystemExit(0 if res["passed"] else 1)
+
+    mutator_names = [m for m in a.mutators.split(",") if m]
     attacks = load_attacks(a.attacks)
-    for m in [m for m in a.mutators.split(",") if m]:
+    for m in mutator_names:
         attacks += [mutate(x, m) for x in load_attacks(a.attacks)]
     result = run_suite(make_agent_factory(a.agent, a.model, a.system), attacks, TASKS, a.n)
+    result["meta"] = meta.collect(agent=a.agent, model=a.model, system_override=bool(a.system),
+                                  n=a.n, attacks=attacks, mutators=mutator_names)
     summary = score(result, [t["name"] for t in BASE_TOOLS])
     path = write_report(result, summary, a.out, a.agent)
     print(f"exposure={summary['headline']}  utility={summary['baseline_utility']:.0%}  "

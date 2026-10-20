@@ -18,6 +18,8 @@ packages = ["src/tripwire"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = ["integration: needs Docker or the live API (excluded by default)"]
+addopts = "-m 'not integration'"
 
 [tool.ruff]
 line-length = 110

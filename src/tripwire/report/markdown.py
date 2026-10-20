@@ -12,8 +12,14 @@ def render(result: dict, summary: dict, label: str) -> str:
         f"- Benign baseline task completion: **{summary['baseline_utility']:.0%}**; "
         f"false-alarm rate: **{summary['baseline_false_alarm']:.0%}**",
         f"- Trials per attack/task pair: {result['n']}",
-        f"- Agent/API errors: **{summary['errors']}**", "",
+        f"- Agent/API errors: **{summary['errors']}**",
     ]
+    m = result.get("meta")
+    if m:
+        L.append(f"- Run: agent={m['agent']} model={m['model']} system_override={m['system_override']} "
+                 f"git={m['git_sha']} attacks={m['attack_count']} (library {m['attack_library_hash']}) "
+                 f"date={m['date_utc']}")
+    L.append("")
     if summary["errors"]:
         L += ["> **Warning:** some runs errored. Errors are NOT counted as attack successes, "
               "so a low score here may mean the agent or API was broken, not secure.", ""]
