@@ -35,6 +35,9 @@ def main(argv=None):
     r.add_argument("--agent", default=cfg.get("agent", "mock-naive"), choices=AGENT_KINDS)
     r.add_argument("--model", default=cfg.get("model"))
     r.add_argument("--system", help="override the agent's system prompt (positive controls)")
+    r.add_argument("--base-url", default=cfg.get("base_url"), help="openai-compat: API base URL")
+    r.add_argument("--api-key-env", default=cfg.get("api_key_env", "OPENAI_API_KEY"),
+                   help="openai-compat: name of the env var holding the API key")
     r.add_argument("-n", type=int, default=cfg.get("n", 20), help="trials per attack/task pair")
     r.add_argument("--attacks", help="YAML file or directory (default: bundled chains)")
     r.add_argument("--mutators", default="", help="comma list, e.g. base64,homoglyph")
@@ -107,9 +110,11 @@ def main(argv=None):
     attacks = load_attacks(a.attacks)
     for m in mutator_names:
         attacks += [mutate(x, m) for x in load_attacks(a.attacks)]
-    result = run_suite(make_agent_factory(a.agent, a.model, a.system), attacks, TASKS, a.n)
+    factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env)
+    result = run_suite(factory, attacks, TASKS, a.n)
     result["meta"] = meta.collect(agent=a.agent, model=a.model, system_override=bool(a.system),
                                   n=a.n, attacks=attacks, mutators=mutator_names)
+    result["meta"]["base_url"] = a.base_url
     summary = score(result, [t["name"] for t in BASE_TOOLS])
     path = write_report(result, summary, a.out, a.agent)
     print(f"exposure={summary['headline']}  utility={summary['baseline_utility']:.0%}  "

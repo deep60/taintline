@@ -1,11 +1,14 @@
 from .base import Agent
 from .mock import MockAgent
+from .ollama import OllamaAgent
+from .openai_compat import OpenAICompatAgent
 from .own_agent import AnthropicAgent
 
-AGENT_KINDS = ["mock-naive", "mock-hardened", "anthropic"]
+AGENT_KINDS = ["mock-naive", "mock-hardened", "anthropic", "openai-compat", "ollama"]
 
 
-def make_agent_factory(kind: str, model: str | None = None, system: str | None = None):
+def make_agent_factory(kind: str, model: str | None = None, system: str | None = None,
+                       base_url: str | None = None, api_key_env: str = "OPENAI_API_KEY"):
     if kind == "mock-naive":
         return lambda seed: MockAgent(0.85, decodes_base64=True, seed=seed)
     if kind == "mock-hardened":
@@ -14,7 +17,16 @@ def make_agent_factory(kind: str, model: str | None = None, system: str | None =
         if not model:
             raise SystemExit("--model is required for --agent anthropic")
         return lambda seed: AnthropicAgent(model, system=system)
+    if kind == "openai-compat":
+        if not model or not base_url:
+            raise SystemExit("--model and --base-url are required for --agent openai-compat")
+        return lambda seed: OpenAICompatAgent(model, base_url, system=system, api_key_env=api_key_env)
+    if kind == "ollama":
+        if not model:
+            raise SystemExit("--model is required for --agent ollama")
+        return lambda seed: OllamaAgent(model, base_url, system=system)
     raise SystemExit(f"unknown agent {kind}")
 
 
-__all__ = ["Agent", "MockAgent", "AnthropicAgent", "AGENT_KINDS", "make_agent_factory"]
+__all__ = ["Agent", "MockAgent", "AnthropicAgent", "OllamaAgent", "OpenAICompatAgent", "AGENT_KINDS",
+           "make_agent_factory"]

@@ -10,5 +10,3 @@ dist/
 build/
 # never commit real attack data or live scope files
 SCOPE.yaml
-lab/canary_data/secrets.txt
-SCOPE.yaml

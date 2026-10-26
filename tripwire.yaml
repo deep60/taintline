@@ -1,0 +1,7 @@
+# Default CLI settings. Command-line flags override these.
+agent: mock-naive
+n: 20
+out: out
+# model: <set when using --agent anthropic or --agent openai-compat>
+# base_url: http://localhost:11434/v1     # for --agent openai-compat
+# api_key_env: OPENAI_API_KEY
