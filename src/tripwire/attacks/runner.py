@@ -24,6 +24,7 @@ def _record(seed: int, err: bool, v, answer: str, trace: list) -> dict:
     return {
         "seed": seed, "error": err, "oracle_success": v.success, "severity": v.severity,
         "leaked": v.leaked, "task_completed": v.task_completed, "answer": answer, "trace": trace,
+        "unrequested_outbound": v.unrequested_outbound,
     }
 
 
@@ -58,7 +59,7 @@ def run_suite(make_agent, attacks, tasks, n: int, seed: int = 0) -> dict:
             })
     baseline = []
     for task in tasks:
-        done = fa = errors = 0
+        done = fa = errors = unrequested = 0
         trials = []
         for _ in range(n):
             tid += 1
@@ -69,7 +70,9 @@ def run_suite(make_agent, attacks, tasks, n: int, seed: int = 0) -> dict:
             errors += err
             done += v.task_completed
             fa += v.success
+            unrequested += v.unrequested_outbound
             trials.append(_record(seed + tid, err, v, answer, trace))
         baseline.append({"task": task.id, "n": n, "completion": done / n,
-                         "false_alarm": fa / n, "errors": errors, "trials": trials})
+                         "false_alarm": fa / n, "unrequested_outbound": unrequested / n,
+                         "errors": errors, "trials": trials})
     return {"n": n, "pairs": pairs, "baseline": baseline}

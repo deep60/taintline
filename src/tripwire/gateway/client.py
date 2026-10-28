@@ -1,9 +1,22 @@
-"""MCP client (stdio + Streamable HTTP). PHASE 1: not implemented.
+"""MCP client (stdio). Every connection passes scope.Gate first.
 
-Read the current MCP spec first (2026-07-28 removed the initialize handshake and
-sessions) and support both it and 2025-11-25. Every connection must pass scope.Gate.
+Streamable HTTP is not implemented yet.
 """
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+from ..scope import Gate
 
 
-def connect(*args, **kwargs):
-    raise NotImplementedError("Phase 1: real MCP client")
+@asynccontextmanager
+async def connect(gate: Gate, server_name: str, command: str, args: list[str] | None = None):
+    gate.check_server(server_name)
+    params = StdioServerParameters(command=command, args=list(args or []))
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            yield session

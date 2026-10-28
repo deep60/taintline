@@ -1,7 +1,0 @@
-# Copy to SCOPE.yaml and edit. Tripwire refuses to touch anything not listed here.
-name: my-lab-test
-authorized_by: "pd"   # who gave permission
-servers:
-  - localhost:8099        # hostnames or stdio server names. No wildcards.
-tools: null               # null = all tools on in-scope servers, or a list: [read_file]
-fuzz: false               # true only if active probing is explicitly authorized

@@ -36,5 +36,6 @@ def score(result: dict, tool_names) -> dict:
         "trifecta": tri,
         "baseline_utility": round(util, 3),
         "baseline_false_alarm": max((b["false_alarm"] for b in baseline), default=0),
+        "baseline_unrequested_outbound": max((b.get("unrequested_outbound", 0) for b in baseline), default=0),
         "errors": errors,
     }

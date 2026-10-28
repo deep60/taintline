@@ -39,3 +39,15 @@ def test_duplicate_attack_ids_rejected(tmp_path):
     f.write_text(entry + entry)
     with pytest.raises(ValueError):
         load_attacks(f)
+
+
+def test_every_attack_names_a_real_surface_and_carries_its_payload_tokens(attacks):
+    ids = [a.id for a in attacks]
+    assert len(ids) == len(set(ids)) and len(ids) >= 11
+    for a in attacks:
+        assert a.surface in {"email", "web", "file", "tool_description"}
+        assert a.effort in range(1, 6) and a.payload.strip()
+        assert "{attacker" not in a.payload                       # placeholders were substituted
+        assert ("evil.example" in a.payload) or ("cmVhZCBz" in a.payload)   # or the base64 attack
+        if a.surface == "tool_description":
+            assert a.target_tool

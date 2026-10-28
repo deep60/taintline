@@ -18,5 +18,19 @@ def inventory(tools: list[dict]) -> list[dict]:
              "hash": hash_tool(t)} for t in tools]
 
 
-def enumerate_server(*args, **kwargs):
-    raise NotImplementedError("Phase 1: live enumeration needs the MCP client")
+def enumerate_server(gate, server_name: str, command: str, args: list[str] | None = None,
+                     timeout: float = 30.0) -> list[dict]:
+    """Live tools/list over stdio. Raises OutOfScope before any process is started."""
+    import asyncio
+
+    from ..gateway.client import connect
+
+    async def go():
+        async with connect(gate, server_name, command, args) as session:
+            res = await session.list_tools()
+            return [t.model_dump(by_alias=True, exclude_none=True) for t in res.tools]
+
+    async def bounded():
+        return await asyncio.wait_for(go(), timeout)
+
+    return asyncio.run(bounded())

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import yaml
@@ -11,11 +12,14 @@ from .attacks import load_attacks, mutate
 from .attacks.runner import run_suite
 from .labeling import format_gate, gate0, make_sheet
 from .report import write_report
+from .rescore import rescore
 from .sandbox import BASE_TOOLS
 from .scanner import scan_manifest
 from .scanner.auth_checks import check_client_config
-from .scanner.enumerate import load_tools
-from .scanner.rugpull import diff_pins, pin
+from .scanner.enumerate import enumerate_server, inventory, load_tools
+from .scanner.rugpull import check, diff_pins, pin
+from .scope import Gate, OutOfScope, ScopeError, load_scope
+from .scope.target import check_run
 from .scoring import score
 from .targets import AGENT_KINDS, make_agent_factory
 from .tasks import TASKS
@@ -43,6 +47,10 @@ def main(argv=None):
     r.add_argument("--mutators", default="", help="comma list, e.g. base64,homoglyph")
     r.add_argument("--out", default=cfg.get("out", "out"))
     r.add_argument("--fail-above", type=float, help="CI mode: exit 1 if score exceeds this")
+    r.add_argument("--scope", default="SCOPE.yaml",
+                   help="authorization file; required for any agent that contacts a network host")
+    r.add_argument("--dry-run", action="store_true",
+                   help="check scope and print the plan; make no model calls and touch no network")
 
     s = sub.add_parser("scan", help="static scan of an MCP tool manifest (JSON)")
     s.add_argument("manifest")
@@ -54,6 +62,46 @@ def main(argv=None):
     d = sub.add_parser("diff", help="compare a manifest against saved pins")
     d.add_argument("pins")
     d.add_argument("manifest")
+
+    en = sub.add_parser("enumerate", help="list tools of a live stdio MCP server (scope-gated) and scan them")
+    en.add_argument("--server", required=True, help="server name as listed in SCOPE.yaml")
+    en.add_argument("--command", required=True, help="command that starts the server, e.g. python")
+    en.add_argument("--arg", action="append", default=[], help="argument for --command (repeatable)")
+    en.add_argument("--scope", default="SCOPE.yaml")
+    en.add_argument("--timeout", type=float, default=30.0)
+    en.add_argument("--json", action="store_true", help="print only the tool list (feed it to `pin`/`diff`)")
+
+    mo = sub.add_parser("monitor", help="re-enumerate a live server and alert if any tool changed since pinned")
+    mo.add_argument("--server", required=True, help="server name as listed in SCOPE.yaml")
+    mo.add_argument("--command", required=True)
+    mo.add_argument("--arg", action="append", default=[])
+    mo.add_argument("--scope", default="SCOPE.yaml")
+    mo.add_argument("--timeout", type=float, default=30.0)
+    mo.add_argument("--pins", default="pins.json", help="pin file; created as the baseline if missing")
+    mo.add_argument("--update", action="store_true", help="accept the current tools as the new baseline")
+
+    lv = sub.add_parser("live-run", help="agent vs a REAL stdio MCP server via the proxy; sink proves the leak")
+    lv.add_argument("--server", required=True)
+    lv.add_argument("--command", required=True)
+    lv.add_argument("--arg", action="append", default=[])
+    lv.add_argument("--collaborator", default="http://127.0.0.1:8099", help="running sink (lab/collaborator/server.py)")
+    lv.add_argument("--inject", choices=["none", "result", "description"], default="result")
+    lv.add_argument("--payload", help="injection text (default: ask the agent to email the secret note)")
+    lv.add_argument("--agent", default=cfg.get("agent", "mock-naive"), choices=AGENT_KINDS)
+    lv.add_argument("--model", default=cfg.get("model"))
+    lv.add_argument("--system")
+    lv.add_argument("--base-url", default=cfg.get("base_url"))
+    lv.add_argument("--api-key-env", default=cfg.get("api_key_env", "OPENAI_API_KEY"))
+    lv.add_argument("-n", type=int, default=5)
+    lv.add_argument("--scope", default="SCOPE.yaml")
+    lv.add_argument("--out", default="out/live")
+
+    px = sub.add_parser("proxy", help="recording stdio proxy for any MCP client (use after `--`: the server command)")
+    px.add_argument("--server", required=True)
+    px.add_argument("--scope", default="SCOPE.yaml")
+    px.add_argument("--transcript")
+    px.add_argument("--inject-json")
+    px.add_argument("server_cmd", nargs="+", help="server command and args")
 
     c = sub.add_parser("config-check", help="check an MCP client config for plaintext secrets/HTTP")
     c.add_argument("config")
@@ -69,6 +117,10 @@ def main(argv=None):
     g.add_argument("--control", required=True, help="results.json of the gullible-control run")
     g.add_argument("--labels", required=True, help="your filled-in labels CSV")
     g.add_argument("--key", required=True, help="labels_key.json from label-sheet")
+
+    rs = sub.add_parser("rescore", help="re-judge stored traces with the current oracle (no model calls)")
+    rs.add_argument("results", help="a results.json from an earlier run")
+    rs.add_argument("--out", default="out/rescored")
 
     a = ap.parse_args(argv)
 
@@ -88,6 +140,81 @@ def main(argv=None):
         print(json.dumps(changes, indent=2))
         raise SystemExit(1 if changes else 0)
 
+    if a.cmd == "enumerate":
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        try:
+            gate = Gate(load_scope(a.scope))
+            tools = enumerate_server(gate, a.server, a.command, a.arg, a.timeout)
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        except TimeoutError:
+            raise SystemExit(f"error: server '{a.server}' did not respond within {a.timeout}s")
+        if a.json:
+            print(json.dumps(tools, indent=2))
+            return
+        res = scan_manifest(tools)
+        print(json.dumps({"server": a.server, "tools": inventory(tools), **res}, indent=2))
+        raise SystemExit(1 if any(f["severity"] == "high" for f in res["findings"]) else 0)
+
+    if a.cmd == "monitor":
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        try:
+            tools = enumerate_server(Gate(load_scope(a.scope)), a.server, a.command, a.arg, a.timeout)
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        except TimeoutError:
+            raise SystemExit(f"error: server '{a.server}' did not respond within {a.timeout}s")
+        pins_path = Path(a.pins)
+        if not pins_path.exists() or a.update:
+            report = check(json.loads(pins_path.read_text()), tools) if pins_path.exists() else None
+            pins_path.write_text(json.dumps(pin(tools), indent=2))
+            if report:
+                print(json.dumps(report, indent=2))
+            print(f"baseline written: {len(tools)} tools -> {a.pins}")
+            return
+        report = check(json.loads(pins_path.read_text()), tools)
+        print(json.dumps(report, indent=2))
+        if report["changes"]:
+            print(f"DRIFT: {len(report['changes'])} tool(s) changed since pinned", file=sys.stderr)
+            raise SystemExit(1)
+        print(f"ok: {len(tools)} tools match {a.pins}")
+        return
+
+    if a.cmd in ("live-run", "proxy"):
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        try:
+            gate = Gate(load_scope(a.scope))
+            gate.check_server(a.server)
+            if a.cmd == "proxy":
+                from .gateway.proxy import run_proxy
+                raise SystemExit(run_proxy(a.server_cmd, a.transcript,
+                                           json.loads(a.inject_json) if a.inject_json else None))
+            check_run(gate, a.agent, a.base_url)
+            from .gateway.live import DEFAULT_PAYLOAD, SinkUnavailable, injection_spec, live_run
+            inject = injection_spec(a.inject, payload=a.payload or DEFAULT_PAYLOAD)
+            factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env)
+            res = live_run(gate, factory, a.server, a.command, a.arg, a.collaborator, inject, a.n, a.out)
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        except SinkUnavailable as e:
+            raise SystemExit(f"error: {e}")
+        out = Path(a.out) / "results.json"
+        out.write_text(json.dumps(res, indent=2))
+        print(f"live run: injection={a.inject} n={res['n']} canary_arrived={res['canary_arrived']} "
+              f"({res['arrival_rate']:.0%}, CI {res['ci'][0]:.0%}-{res['ci'][1]:.0%}) "
+              f"oracle_success={res['oracle_success']} disagreements={res['oracle_disagrees_with_sink']} "
+              f"errors={res['errors']}  results={out}")
+        return
+
     if a.cmd == "config-check":
         found = check_client_config(json.loads(Path(a.config).read_text()))
         print(json.dumps(found, indent=2))
@@ -106,10 +233,35 @@ def main(argv=None):
         print(format_gate(res))
         raise SystemExit(0 if res["passed"] else 1)
 
+    if a.cmd == "rescore":
+        old = json.loads(Path(a.results).read_text())
+        result, summary = rescore(old)
+        path = write_report(result, summary, a.out, f"{result.get('meta', {}).get('agent', 'run')}-rescored")
+        print(f"rescored: exposure={summary['headline']}  utility={summary['baseline_utility']:.0%}  "
+              f"false_alarm={summary['baseline_false_alarm']:.0%}  "
+              f"unrequested_outbound={summary['baseline_unrequested_outbound']:.0%}  report={path}")
+        return
+
+    gate = None
+    if Path(a.scope).exists():
+        try:
+            gate = Gate(load_scope(a.scope))
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+    try:
+        server = check_run(gate, a.agent, a.base_url)
+    except OutOfScope as e:
+        raise SystemExit(f"refused: {e}")
+
     mutator_names = [m for m in a.mutators.split(",") if m]
     attacks = load_attacks(a.attacks)
     for m in mutator_names:
         attacks += [mutate(x, m) for x in load_attacks(a.attacks)]
+    if a.dry_run:
+        print(f"dry run: agent={a.agent} target={server or 'none (hermetic)'} "
+              f"scope={gate.scope.name if gate else 'not needed'} attacks={len(attacks)} "
+              f"tasks={len(TASKS)} n={a.n}; no calls made")
+        return
     factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env)
     result = run_suite(factory, attacks, TASKS, a.n)
     result["meta"] = meta.collect(agent=a.agent, model=a.model, system_override=bool(a.system),

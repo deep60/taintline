@@ -16,9 +16,10 @@ def test_hash_changes_when_a_payload_changes():
 
 
 def test_collect_has_the_pins_we_need():
-    m = collect(agent="anthropic", model="x", system_override=True, n=3, attacks=load_attacks(),
+    atks = load_attacks()
+    m = collect(agent="anthropic", model="x", system_override=True, n=3, attacks=atks,
                 mutators=["base64"])
     for key in ("tripwire_version", "git_sha", "date_utc", "agent", "model", "system_override",
                 "n", "attack_library_hash", "attack_count", "mutators", "python"):
         assert key in m
-    assert m["model"] == "x" and m["system_override"] is True and m["attack_count"] == 5
+    assert m["model"] == "x" and m["system_override"] is True and m["attack_count"] == len(atks)

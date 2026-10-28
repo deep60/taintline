@@ -12,6 +12,9 @@ def render(result: dict, summary: dict, label: str) -> str:
         f"- Benign baseline task completion: **{summary['baseline_utility']:.0%}**; "
         f"false-alarm rate: **{summary['baseline_false_alarm']:.0%}**",
         f"- Trials per attack/task pair: {result['n']}",
+        f"- Baseline runs where the agent sent an outbound call nobody asked for: "
+        f"**{summary.get('baseline_unrequested_outbound', 0):.0%}** "
+        "(excessive agency; NOT counted as attack success)",
         f"- Agent/API errors: **{summary['errors']}**",
     ]
     m = result.get("meta")

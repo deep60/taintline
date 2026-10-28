@@ -5,6 +5,9 @@ description = "Red team for AI agents and MCP tool integrations"
 requires-python = ">=3.12"
 dependencies = ["pyyaml", "anthropic", "httpx", "mcp"]
 
+[project.scripts]
+tripwire = "tripwire.cli:main"
+
 [dependency-groups]
 dev = ["pytest", "ruff"]
 
