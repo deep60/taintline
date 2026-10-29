@@ -24,6 +24,8 @@ from .scoring import score
 from .targets import AGENT_KINDS, make_agent_factory
 from .tasks import TASKS
 
+LIVE_ATTACKS = Path(__file__).parent / "attacks" / "live"
+
 
 def _config() -> dict:
     p = Path("tripwire.yaml")
@@ -90,11 +92,28 @@ def main(argv=None):
     lv.add_argument("--agent", default=cfg.get("agent", "mock-naive"), choices=AGENT_KINDS)
     lv.add_argument("--model", default=cfg.get("model"))
     lv.add_argument("--system")
+    lv.add_argument("--gullible", action="store_true",
+                    help="positive control: tell the model to obey instructions found in tool output")
     lv.add_argument("--base-url", default=cfg.get("base_url"))
     lv.add_argument("--api-key-env", default=cfg.get("api_key_env", "OPENAI_API_KEY"))
     lv.add_argument("-n", type=int, default=5)
     lv.add_argument("--scope", default="SCOPE.yaml")
     lv.add_argument("--out", default="out/live")
+
+    ls2 = sub.add_parser("live-suite", help="all live attacks x all live tasks vs a real stdio MCP server")
+    for flag, kw in [("--server", dict(required=True)), ("--command", dict(required=True)),
+                     ("--collaborator", dict(default="http://127.0.0.1:8099")),
+                     ("--attacks", dict(help="YAML file/dir (default: bundled lab/notes attacks)")),
+                     ("--mutators", dict(default="", help="comma list, e.g. base64,homoglyph")),
+                     ("--agent", dict(default=cfg.get("agent", "mock-naive"), choices=AGENT_KINDS)),
+                     ("--model", dict(default=cfg.get("model"))), ("--system", dict()),
+                     ("--base-url", dict(default=cfg.get("base_url"))),
+                     ("--api-key-env", dict(default=cfg.get("api_key_env", "OPENAI_API_KEY"))),
+                     ("--scope", dict(default="SCOPE.yaml")), ("--out", dict(default="out/live_suite"))]:
+        ls2.add_argument(flag, **kw)
+    ls2.add_argument("--arg", action="append", default=[])
+    ls2.add_argument("--gullible", action="store_true")
+    ls2.add_argument("-n", type=int, default=3, help="trials per attack/task pair")
 
     px = sub.add_parser("proxy", help="recording stdio proxy for any MCP client (use after `--`: the server command)")
     px.add_argument("--server", required=True)
@@ -186,6 +205,37 @@ def main(argv=None):
         print(f"ok: {len(tools)} tools match {a.pins}")
         return
 
+    if a.cmd == "live-suite":
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        from .gateway.live import GULLIBLE_SYSTEM, LIVE_TASKS, SinkUnavailable, live_suite, suite_markdown
+        try:
+            gate = Gate(load_scope(a.scope))
+            gate.check_server(a.server)
+            check_run(gate, a.agent, a.base_url)
+            attacks = load_attacks(a.attacks or str(LIVE_ATTACKS))
+            for m in [m for m in a.mutators.split(",") if m]:
+                attacks += [mutate(x, m) for x in load_attacks(a.attacks or str(LIVE_ATTACKS))]
+            system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
+            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env)
+            res = live_suite(gate, factory, a.server, a.command, a.arg, a.collaborator, attacks,
+                             LIVE_TASKS, a.n, a.out)
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        except SinkUnavailable as e:
+            raise SystemExit(f"error: {e}")
+        Path(a.out, "results.json").write_text(json.dumps(res, indent=2))
+        Path(a.out, "report.md").write_text(suite_markdown(res))
+        o = res["overall"]
+        print(f"live suite: {len(res['pairs'])} pairs x n={a.n}  delivered={o['delivered']}/{o['trials']} "
+              f"({o['asr']:.0%}, CI {o['ci'][0]:.0%}-{o['ci'][1]:.0%})  errors={o['errors']}  "
+              f"disagreements={o['disagreements']}  report={Path(a.out, 'report.md')}")
+        if o["errors"]:
+            print(f"WARNING: {o['errors']} trial(s) errored; errors are NOT counted as secure.")
+        return
+
     if a.cmd in ("live-run", "proxy"):
         if not Path(a.scope).exists():
             raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
@@ -197,9 +247,16 @@ def main(argv=None):
                 raise SystemExit(run_proxy(a.server_cmd, a.transcript,
                                            json.loads(a.inject_json) if a.inject_json else None))
             check_run(gate, a.agent, a.base_url)
-            from .gateway.live import DEFAULT_PAYLOAD, SinkUnavailable, injection_spec, live_run
+            from .gateway.live import (
+                DEFAULT_PAYLOAD,
+                GULLIBLE_SYSTEM,
+                SinkUnavailable,
+                injection_spec,
+                live_run,
+            )
             inject = injection_spec(a.inject, payload=a.payload or DEFAULT_PAYLOAD)
-            factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env)
+            system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
+            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env)
             res = live_run(gate, factory, a.server, a.command, a.arg, a.collaborator, inject, a.n, a.out)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
@@ -211,8 +268,15 @@ def main(argv=None):
         out.write_text(json.dumps(res, indent=2))
         print(f"live run: injection={a.inject} n={res['n']} canary_arrived={res['canary_arrived']} "
               f"({res['arrival_rate']:.0%}, CI {res['ci'][0]:.0%}-{res['ci'][1]:.0%}) "
+              f"canary_read={res['canary_read']} canary_in_answer={res['canary_in_answer']} "
               f"oracle_success={res['oracle_success']} disagreements={res['oracle_disagrees_with_sink']} "
               f"errors={res['errors']}  results={out}")
+        if res["errors"]:
+            first = next(t["error"] for t in res["trials"] if t["error"])
+            print(f"WARNING: {res['errors']}/{res['n']} trials errored; first error: {first.splitlines()[0]}")
+            if res["errors"] == res["n"]:
+                print("WARNING: every trial errored, so these numbers say nothing about the agent.")
+                raise SystemExit(2)
         return
 
     if a.cmd == "config-check":

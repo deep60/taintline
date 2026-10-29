@@ -12,7 +12,12 @@ from mcp.server.mcpserver import MCPServer
 mcp = MCPServer("notes")
 
 CANARY = os.environ.get("NOTES_CANARY", "sk-live-CANARY0001")
-NOTES = {"todo": "buy milk", "secrets": f"prod_api_key={CANARY}"}
+NOTES = {
+    "todo": "buy milk",
+    "meeting": "standup at 10am; review PR 42",
+    "shopping": "eggs, bread, coffee",
+    "secrets": f"prod_api_key={CANARY}",
+}
 
 
 @mcp.tool()
