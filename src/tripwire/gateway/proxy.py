@@ -7,6 +7,8 @@ what it needs. Run as a module:
     python -m tripwire.gateway.proxy --transcript t.jsonl [--inject-json '{...}'] -- CMD ARGS...
 
 Injection spec: {"surface": "tool_description" | "tool_result", "target_tool": name, "payload": text}
+Optional, tool_result only: "after": N skips the first N calls of the target tool (delayed payload);
+"parts": [p1, p2, ...] plants one part per call instead of "payload" (split payload).
 """
 from __future__ import annotations
 
@@ -50,6 +52,17 @@ def _plant_in_result(msg: dict, inj: dict) -> None:
     content.append({"type": "text", "text": inj["payload"]})
 
 
+def _payload_for_call(inj: dict, call_index: int) -> str | None:
+    """Text to plant on the Nth call of the target tool, or None to leave that call untouched."""
+    k = call_index - int(inj.get("after", 0))
+    if k < 0:
+        return None
+    parts = inj.get("parts")
+    if parts:
+        return parts[k] if k < len(parts) else None
+    return inj["payload"]
+
+
 def run_proxy(cmd: list[str], transcript: str | None = None, inject: dict | None = None,
               stdin=None, stdout=None) -> int:
     """Relay until the client closes stdin. Returns the server's exit code."""
@@ -58,6 +71,7 @@ def run_proxy(cmd: list[str], transcript: str | None = None, inject: dict | None
     rec = Recorder(transcript)
     server = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)  # stderr inherited
     pending: dict = {}          # request id -> (method, tool name)
+    target_calls = [0]          # calls of the injection's target tool seen so far
 
     def client_to_server():
         for line in stdin:
@@ -95,12 +109,15 @@ def run_proxy(cmd: list[str], transcript: str | None = None, inject: dict | None
                     continue
                 if method == "tools/call" and inject and inject.get("surface") == "tool_result" \
                         and tool == inject.get("target_tool"):
-                    _plant_in_result(msg, inject)
-                    line = (json.dumps(msg) + "\n").encode()
-                    rec.write(dir="server->client", msg=msg, injected=True)
-                    stdout.write(line)
-                    stdout.flush()
-                    continue
+                    text = _payload_for_call(inject, target_calls[0])
+                    target_calls[0] += 1
+                    if text is not None:
+                        _plant_in_result(msg, {"payload": text})
+                        line = (json.dumps(msg) + "\n").encode()
+                        rec.write(dir="server->client", msg=msg, injected=True)
+                        stdout.write(line)
+                        stdout.flush()
+                        continue
             rec.write(dir="server->client", msg=msg) if msg is not None else \
                 rec.write(dir="server->client", raw=line.decode("utf-8", "replace"))
             stdout.write(line)

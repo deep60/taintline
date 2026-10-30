@@ -101,7 +101,8 @@ def main(argv=None):
     lv.add_argument("--out", default="out/live")
 
     ls2 = sub.add_parser("live-suite", help="all live attacks x all live tasks vs a real stdio MCP server")
-    for flag, kw in [("--server", dict(required=True)), ("--command", dict(required=True)),
+    for flag, kw in [("--server", dict()), ("--command", dict()),
+                     ("--lab", dict(help="a lab from `tripwire labs` (servers, tasks and attacks included)")),
                      ("--collaborator", dict(default="http://127.0.0.1:8099")),
                      ("--attacks", dict(help="YAML file/dir (default: bundled lab/notes attacks)")),
                      ("--mutators", dict(default="", help="comma list, e.g. base64,homoglyph")),
@@ -114,6 +115,12 @@ def main(argv=None):
     ls2.add_argument("--arg", action="append", default=[])
     ls2.add_argument("--gullible", action="store_true")
     ls2.add_argument("-n", type=int, default=3, help="trials per attack/task pair")
+
+    sub.add_parser("labs", help="list the bundled labs (servers, tasks, attacks)")
+    at = sub.add_parser("attacks", help="attack library tools")
+    at.add_argument("action", choices=["validate"])
+    at.add_argument("path", nargs="?", help="YAML file or directory (default: the lab's attacks)")
+    at.add_argument("--lab", help="check placeholders and tool names against this lab")
 
     px = sub.add_parser("proxy", help="recording stdio proxy for any MCP client (use after `--`: the server command)")
     px.add_argument("--server", required=True)
@@ -205,21 +212,55 @@ def main(argv=None):
         print(f"ok: {len(tools)} tools match {a.pins}")
         return
 
+    if a.cmd == "labs":
+        from .labs import LABS
+        for lab in LABS.values():
+            print(f"{lab.name:16} servers={'+'.join(lab.servers):14} tasks={len(lab.tasks)} "
+                  f"attacks={len(lab.attacks())}  {lab.description}")
+        print(f"total: {sum(len(lb.tasks) for lb in LABS.values())} tasks across {len(LABS)} labs")
+        return
+
+    if a.cmd == "attacks":
+        from .attacks.validate import validate_file
+        from .labs import GENERIC, get_lab
+        lab = get_lab(a.lab) if a.lab else None
+        path = a.path or (str(GENERIC) if lab and not lab.attack_file else str(lab.attack_file) if lab else None)
+        if not path:
+            raise SystemExit("give a path or --lab")
+        subs = lab.subs() if lab else None
+        tools = {lab.inject_tool} if lab and lab.inject_tool else None
+        servers = set(lab.servers) if lab else None
+        problems = validate_file(path, subs, tools, servers)
+        for m in problems:
+            print("PROBLEM:", m)
+        print(f"{path}: {'OK' if not problems else str(len(problems)) + ' problem(s)'}")
+        raise SystemExit(1 if problems else 0)
+
     if a.cmd == "live-suite":
         if not Path(a.scope).exists():
             raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
         from .gateway.live import GULLIBLE_SYSTEM, LIVE_TASKS, SinkUnavailable, live_suite, suite_markdown
+        from .labs import get_lab
+        lab = get_lab(a.lab) if a.lab else None
+        if not lab and not (a.server and a.command):
+            raise SystemExit("give --lab NAME, or both --server and --command")
         try:
             gate = Gate(load_scope(a.scope))
-            gate.check_server(a.server)
+            for name in (lab.servers if lab else [a.server]):
+                gate.check_server(name)
             check_run(gate, a.agent, a.base_url)
-            attacks = load_attacks(a.attacks or str(LIVE_ATTACKS))
+            subs = lab.subs() if lab else None
+            base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else \
+                (lab.attacks if lab else (lambda: load_attacks(str(LIVE_ATTACKS))))
+            attacks = base()
             for m in [m for m in a.mutators.split(",") if m]:
-                attacks += [mutate(x, m) for x in load_attacks(a.attacks or str(LIVE_ATTACKS))]
+                attacks += [mutate(x, m) for x in base()]
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
             factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env)
-            res = live_suite(gate, factory, a.server, a.command, a.arg, a.collaborator, attacks,
-                             LIVE_TASKS, a.n, a.out)
+            res = live_suite(gate, factory, a.server or lab.name, a.command, a.arg, a.collaborator, attacks,
+                             lab.tasks if lab else LIVE_TASKS, a.n, a.out,
+                             specs=lab.specs() if lab else None, base_env=lab.env if lab else None,
+                             lab=lab.name if lab else None)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
         except OutOfScope as e:
@@ -229,6 +270,8 @@ def main(argv=None):
         Path(a.out, "results.json").write_text(json.dumps(res, indent=2))
         Path(a.out, "report.md").write_text(suite_markdown(res))
         o = res["overall"]
+        print(f"live suite: exposure={res['summary']['headline']}/100  utility={res['summary']['baseline_utility']:.0%}  "
+              f"false_alarm={res['summary']['baseline_false_alarm']:.0%}")
         print(f"live suite: {len(res['pairs'])} pairs x n={a.n}  delivered={o['delivered']}/{o['trials']} "
               f"({o['asr']:.0%}, CI {o['ci'][0]:.0%}-{o['ci'][1]:.0%})  errors={o['errors']}  "
               f"disagreements={o['disagreements']}  report={Path(a.out, 'report.md')}")

@@ -17,24 +17,49 @@ class Attack:
     surface: str      # email | web | file | tool_description
     effort: int       # 1 (trivial) .. 5 (hard for the attacker)
     target: str       # api_key | ssn
-    payload: str
+    payload: str = ""
     owasp: str = "LLM01"
     target_tool: str | None = None
+    server: str | None = None      # which lab server the injection rides in on (multi-server labs)
+    after: int = 0                 # delayed payload: skip the first N calls of target_tool
+    parts: list | None = None      # split payload: one part planted per call of target_tool
+    env: dict | None = None        # extra environment for the lab servers in this attack's trials
 
-    def injection(self) -> dict:
-        return {"surface": self.surface, "payload": self.payload,
-                "target_tool": self.target_tool}
+    def injection(self) -> dict | None:
+        if self.surface == "native":      # the lab server is itself malicious; nothing to plant
+            return {"surface": "native"}
+        spec = {"surface": self.surface, "payload": self.payload, "target_tool": self.target_tool}
+        if self.server:
+            spec["server"] = self.server
+        if self.after:
+            spec["after"] = self.after
+        if self.parts:
+            spec["parts"] = list(self.parts)
+        return spec
 
 
-def load_attacks(path: str | Path | None = None) -> list[Attack]:
-    """Load one YAML file, or every *.yaml in a directory (default: the bundled chains)."""
+def _fill(text, subs: dict):
+    """Lab substitutions first (they may contain the attacker placeholders), then the attacker's."""
+    if not isinstance(text, str):
+        return text
+    for k, v in (subs or {}).items():
+        text = text.replace("{" + k + "}", v)
+    return text.replace("{attacker_email}", ATTACKER_EMAIL).replace("{attacker_url}", ATTACKER_URL)
+
+
+def load_attacks(path: str | Path | None = None, subs: dict | None = None) -> list[Attack]:
+    """Load one YAML file, or every *.yaml in a directory (default: the bundled chains).
+    `subs` fills {placeholders} in templates, e.g. {read_secret} for a given lab."""
     p = Path(path) if path else CHAINS_DIR
     files = sorted(p.glob("*.yaml")) if p.is_dir() else [p]
     out: list[Attack] = []
     for f in files:
         for d in yaml.safe_load(f.read_text()) or []:
-            d["payload"] = (d["payload"].replace("{attacker_email}", ATTACKER_EMAIL)
-                                        .replace("{attacker_url}", ATTACKER_URL))
+            d["payload"] = d.get("payload") or ""
+            for key in ("payload", "target_tool", "server"):
+                d[key] = _fill(d.get(key), subs)
+            if d.get("parts"):
+                d["parts"] = [_fill(x, subs) for x in d["parts"]]
             out.append(Attack(**d))
     ids = [a.id for a in out]
     dupes = {i for i in ids if ids.count(i) > 1}
