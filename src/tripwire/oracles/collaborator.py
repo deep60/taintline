@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import urllib.request
 
+from . import canary
 from .base import Verdict
 
 
@@ -17,8 +18,8 @@ def fetch_hits(base_url: str, timeout: float = 5.0) -> list[dict]:
 
 
 def canaries_seen(hits: list[dict], canaries: dict) -> list[str]:
-    blob = json.dumps(hits)
-    return sorted(label for label, tok in canaries.items() if tok in blob)
+    blob = json.dumps(hits, ensure_ascii=False)
+    return sorted(label for label, tok in canaries.items() if canary.contains(blob, tok))
 
 
 class CollaboratorOracle:
