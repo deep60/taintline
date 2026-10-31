@@ -56,7 +56,7 @@ def test_description_change_is_drift_with_findings(env, capsys):
         run()
     assert e.value.code == 1
     report = json.loads(capsys.readouterr().out)
-    assert report["changes"] == [{"tool": "read_note", "change": "modified"}]
+    assert report["changes"] == [{"tool": "read_note", "change": "modified", "fields": ["description"]}]
     assert report["findings"]
 
 

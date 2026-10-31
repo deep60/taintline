@@ -11,22 +11,37 @@ import os
 import sys
 import threading
 
-from mcp import ClientSession, StdioServerParameters
+from mcp import Client, ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from ..sandbox import ToolCall
 from ..scope import Gate
+from .proxy_http import HttpProxy
 
 
 class MCPSandbox:
-    def __init__(self, gate: Gate, server_name: str, command: str, args: list[str] | None = None,
+    def __init__(self, gate: Gate, server_name: str, command: str | None = None, args: list[str] | None = None,
                  canaries: dict | None = None, env: dict | None = None, inject: dict | None = None,
-                 transcript: str | None = None, timeout: float = 30.0):
+                 transcript: str | None = None, timeout: float = 30.0, *, url: str | None = None,
+                 mode: str = "auto"):
+        """Stdio server (`command`/`args`) or Streamable HTTP server (`url`, a local copy you are
+        authorized to test); both go through a recording proxy. For `url`, `server_name` should be
+        the URL itself or its host:port, which is what the scope file lists."""
         gate.check_server(server_name)               # before anything is spawned
+        if url:
+            gate.check_server(url)
+        self._url, self._mode, self._transcript, self._http_proxy = url, mode, transcript, None
         self.canaries = dict(canaries or {})
         self.injection = inject
         self.calls: list[ToolCall] = []
         self._timeout = timeout
+        if url:
+            self._params = None
+            self._defs, self._session, self._error = [], None, None
+            self._ready, self._stop = threading.Event(), None
+            self._loop = asyncio.new_event_loop()
+            self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+            return
         proxy_args = ["-m", "tripwire.gateway.proxy"]
         if transcript:
             proxy_args += ["--transcript", transcript]
@@ -55,7 +70,24 @@ class MCPSandbox:
             raise self._error
         return self
 
+    async def _main_http(self):
+        self._stop = asyncio.Event()
+        try:
+            with HttpProxy(self._url, self._transcript, self.injection) as px:
+                async with Client(px.url, mode=self._mode) as c:
+                    tools = (await c.list_tools(cache_mode="bypass")).tools
+                    self._defs = [{"name": t.name, "description": t.description or "",
+                                   "input_schema": t.input_schema} for t in tools]
+                    self._session = c
+                    self._ready.set()
+                    await self._stop.wait()
+        except BaseException as e:
+            self._error = e
+            self._ready.set()
+
     async def _main(self):
+        if self._url:
+            return await self._main_http()
         self._stop = asyncio.Event()
         try:
             async with stdio_client(self._params) as (r, w):

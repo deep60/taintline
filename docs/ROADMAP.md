@@ -77,6 +77,19 @@ Not done yet (do not claim these):
 
 **Exit:** report for 3 third-party servers; one rug-pull demo on a real server.
 
+### M3 status (2026-10-31)
+Built and tested: Streamable HTTP client (`gateway/client.py::connect_url`, the SDK's `Client` negotiates the
+current stateless 2026-07-28 revision and falls back to the 2025 session-based ones), a recording and
+injecting HTTP proxy (`gateway/proxy_http.py`, loopback only, forwards to one upstream, redacts auth headers),
+`MCPSandbox(url=...)`, `enumerate --url` / `monitor --url`, a local rug-pull server, and tests over real HTTP
+for both protocol eras. Runbook: `docs/THIRD_PARTY.md`.
+Done on real servers (`docs/M3_REPORT.md`): enumerate, static scan, pin and monitor on `mcp-server-fetch`,
+`mcp-server-git` and `@modelcontextprotocol/server-filesystem`; a real version-to-version drift
+(`mcp-server-git` 2026.10.10 to 2026.10.28: 12 tools changed, 11 titles only, 1 description+schema), now reported
+per field. Pins store per-part hashes; older pin files still load.
+Not done: no agent run against a third-party server, no third-party server over HTTP, no malicious rug pull in
+the wild (the malicious variant is the lab `rugpull` server), no OAuth for remote servers.
+
 ## M4. Scores and reports (3-4 days)
 - `schema_version` in `results.json`; SARIF 2.1.0 output; `--fail-above` for CI on live runs.
 - One report format covering: static findings, rug-pull drift, dynamic leak rates, partial effects, coverage.

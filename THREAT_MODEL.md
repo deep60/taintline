@@ -31,8 +31,13 @@ secrets or acting for an attacker, with reproducible, deterministic evidence.
 2. Tripwire ↔ target (model API, Ollama, MCP server): untrusted network boundary; every
    connection is checked by `scope.Gate` before the run starts.
 3. Tripwire ↔ sandbox: in-process fake tools; nothing real is reachable from them.
-4. Planned: collaborator sink (`lab/`), an isolated host that receives exfiltration
+4. Collaborator sink (`lab/collaborator`), an isolated host that receives exfiltration
    attempts. Must have no route to the internet.
+5. Third-party MCP server code (M3): running someone else's server executes their code on
+   your machine. Install into `third_party/` only, with install scripts and source builds
+   disabled, point the server at throwaway data, and keep real credentials out of its
+   environment. See `docs/THIRD_PARTY.md`. Only local copies are tested; never a hosted
+   instance owned by someone else.
 
 ## Authorization model
 - `SCOPE.yaml` (git-ignored) lists servers (host:port or stdio name), optional tool
@@ -56,11 +61,14 @@ secrets or acting for an attacker, with reproducible, deterministic evidence.
 - Telemetry: none.
 
 ## Known limitations
-- Encoded exfiltration (base64, split, URL-encoded secrets) is not recognized as a leak;
-  it appears only as an unrequested outbound call.
-- Real MCP connectivity (client, proxy, live enumeration) is not implemented yet, so the
-  gate currently covers the model-API targets only. It must be called from every new
-  connection path as those are added.
+- Encoded exfiltration is recognized for base64, hex, URL-encoding, ROT13, reversal,
+  zero-width and separator padding. Other transforms (a cipher, a custom alphabet, a secret
+  split across several messages) can still evade the oracle; the sink sees the same bytes.
+- The gate covers model APIs, stdio servers and Streamable HTTP servers. It must be called
+  from every new connection path; the HTTP proxy forwards only to its one configured upstream
+  and binds loopback.
+- The HTTP proxy buffers SSE responses, so long-lived streams are not supported, and it
+  does not handle OAuth for remote servers.
 - The scope file is a safeguard against mistakes, not against deliberate misuse.
 
 ## Disclosure

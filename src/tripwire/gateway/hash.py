@@ -29,3 +29,24 @@ def hash_tools(tools: list[dict]) -> dict[str, str]:
             key = f"{name}#{i}"
         out[key] = hash_tool(t)
     return out
+
+
+def _strip_titles(node, in_properties: bool = False):
+    """Drop schema `title` annotations (generator-assigned names), keeping real properties named title."""
+    if isinstance(node, dict):
+        return {k: _strip_titles(v, k == "properties") for k, v in node.items()
+                if not (k == "title" and isinstance(v, str) and not in_properties)}
+    if isinstance(node, list):
+        return [_strip_titles(v) for v in node]
+    return node
+
+
+def _sha(obj) -> str:
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def detail_tool(tool: dict) -> dict:
+    """Whole-definition hash plus per-part hashes, so a drift report can say WHAT changed."""
+    schema = tool.get("inputSchema", tool.get("input_schema", {}))
+    return {"hash": hash_tool(tool), "description": _sha(tool.get("description", "")),
+            "schema": _sha(_strip_titles(schema)), "titles": _sha(schema)}

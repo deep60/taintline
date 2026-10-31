@@ -16,7 +16,7 @@ from .rescore import rescore
 from .sandbox import BASE_TOOLS
 from .scanner import scan_manifest
 from .scanner.auth_checks import check_client_config
-from .scanner.enumerate import enumerate_server, inventory, load_tools
+from .scanner.enumerate import enumerate_server, enumerate_url, inventory, load_tools
 from .scanner.rugpull import check, diff_pins, pin
 from .scope import Gate, OutOfScope, ScopeError, load_scope
 from .scope.target import check_run
@@ -30,6 +30,15 @@ LIVE_ATTACKS = Path(__file__).parent / "attacks" / "live"
 def _config() -> dict:
     p = Path("tripwire.yaml")
     return (yaml.safe_load(p.read_text()) or {}) if p.exists() else {}
+
+
+def _list_tools(gate, a) -> list[dict]:
+    """tools/list from a stdio server (--server/--command) or a Streamable HTTP one (--url)."""
+    if a.url:
+        return enumerate_url(gate, a.url, a.timeout, a.protocol)
+    if not (a.server and a.command):
+        raise SystemExit("give --url, or both --server and --command")
+    return enumerate_server(gate, a.server, a.command, a.arg, a.timeout)
 
 
 def main(argv=None):
@@ -66,17 +75,21 @@ def main(argv=None):
     d.add_argument("manifest")
 
     en = sub.add_parser("enumerate", help="list tools of a live stdio MCP server (scope-gated) and scan them")
-    en.add_argument("--server", required=True, help="server name as listed in SCOPE.yaml")
-    en.add_argument("--command", required=True, help="command that starts the server, e.g. python")
+    en.add_argument("--server", help="stdio: server name as listed in SCOPE.yaml")
+    en.add_argument("--command", help="stdio: command that starts the server, e.g. python")
     en.add_argument("--arg", action="append", default=[], help="argument for --command (repeatable)")
+    en.add_argument("--url", help="Streamable HTTP endpoint of a LOCAL copy you may test")
+    en.add_argument("--protocol", default="auto", help="auto (default) or legacy to force the 2025 handshake")
     en.add_argument("--scope", default="SCOPE.yaml")
     en.add_argument("--timeout", type=float, default=30.0)
     en.add_argument("--json", action="store_true", help="print only the tool list (feed it to `pin`/`diff`)")
 
     mo = sub.add_parser("monitor", help="re-enumerate a live server and alert if any tool changed since pinned")
-    mo.add_argument("--server", required=True, help="server name as listed in SCOPE.yaml")
-    mo.add_argument("--command", required=True)
+    mo.add_argument("--server", help="stdio: server name as listed in SCOPE.yaml")
+    mo.add_argument("--command")
     mo.add_argument("--arg", action="append", default=[])
+    mo.add_argument("--url", help="Streamable HTTP endpoint (instead of --server/--command)")
+    mo.add_argument("--protocol", default="auto")
     mo.add_argument("--scope", default="SCOPE.yaml")
     mo.add_argument("--timeout", type=float, default=30.0)
     mo.add_argument("--pins", default="pins.json", help="pin file; created as the baseline if missing")
@@ -171,31 +184,31 @@ def main(argv=None):
             raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
         try:
             gate = Gate(load_scope(a.scope))
-            tools = enumerate_server(gate, a.server, a.command, a.arg, a.timeout)
+            tools = _list_tools(gate, a)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
         except OutOfScope as e:
             raise SystemExit(f"refused: {e}")
         except TimeoutError:
-            raise SystemExit(f"error: server '{a.server}' did not respond within {a.timeout}s")
+            raise SystemExit(f"error: server '{a.url or a.server}' did not respond within {a.timeout}s")
         if a.json:
             print(json.dumps(tools, indent=2))
             return
         res = scan_manifest(tools)
-        print(json.dumps({"server": a.server, "tools": inventory(tools), **res}, indent=2))
+        print(json.dumps({"server": a.url or a.server, "tools": inventory(tools), **res}, indent=2))
         raise SystemExit(1 if any(f["severity"] == "high" for f in res["findings"]) else 0)
 
     if a.cmd == "monitor":
         if not Path(a.scope).exists():
             raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
         try:
-            tools = enumerate_server(Gate(load_scope(a.scope)), a.server, a.command, a.arg, a.timeout)
+            tools = _list_tools(Gate(load_scope(a.scope)), a)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
         except OutOfScope as e:
             raise SystemExit(f"refused: {e}")
         except TimeoutError:
-            raise SystemExit(f"error: server '{a.server}' did not respond within {a.timeout}s")
+            raise SystemExit(f"error: server '{a.url or a.server}' did not respond within {a.timeout}s")
         pins_path = Path(a.pins)
         if not pins_path.exists() or a.update:
             report = check(json.loads(pins_path.read_text()), tools) if pins_path.exists() else None
@@ -207,7 +220,12 @@ def main(argv=None):
         report = check(json.loads(pins_path.read_text()), tools)
         print(json.dumps(report, indent=2))
         if report["changes"]:
-            print(f"DRIFT: {len(report['changes'])} tool(s) changed since pinned", file=sys.stderr)
+            kinds: dict = {}
+            for c in report["changes"]:
+                key = "+".join(c.get("fields") or [c["change"]])
+                kinds[key] = kinds.get(key, 0) + 1
+            detail = ", ".join(f"{n} {k}" for k, n in sorted(kinds.items()))
+            print(f"DRIFT: {len(report['changes'])} tool(s) changed since pinned ({detail})", file=sys.stderr)
             raise SystemExit(1)
         print(f"ok: {len(tools)} tools match {a.pins}")
         return
