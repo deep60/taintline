@@ -10,8 +10,10 @@ import yaml
 from . import meta
 from .attacks import load_attacks, mutate
 from .attacks.runner import run_suite
+from .gateway.budget import Budget
 from .labeling import format_gate, gate0, make_sheet
 from .report import write_report
+from .report.schema import load_results, stamp
 from .rescore import rescore
 from .sandbox import BASE_TOOLS
 from .scanner import scan_manifest
@@ -30,6 +32,17 @@ LIVE_ATTACKS = Path(__file__).parent / "attacks" / "live"
 def _config() -> dict:
     p = Path("tripwire.yaml")
     return (yaml.safe_load(p.read_text()) or {}) if p.exists() else {}
+
+
+def _write_sarif(findings, path: str, artifact: str) -> None:
+    from .report.sarif import to_sarif, validate_sarif
+    doc = to_sarif(findings, artifact)
+    problems = validate_sarif(doc)
+    if problems:
+        raise SystemExit("internal error: SARIF output is malformed: " + "; ".join(problems))
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(json.dumps(doc, indent=2))
+    print(f"sarif: {len(doc['runs'][0]['results'])} result(s) -> {path}", file=sys.stderr)
 
 
 def _list_tools(gate, a) -> list[dict]:
@@ -82,6 +95,8 @@ def main(argv=None):
     en.add_argument("--protocol", default="auto", help="auto (default) or legacy to force the 2025 handshake")
     en.add_argument("--scope", default="SCOPE.yaml")
     en.add_argument("--timeout", type=float, default=30.0)
+    en.add_argument("--sarif", help="also write SARIF 2.1.0 findings to this path")
+    en.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
     en.add_argument("--json", action="store_true", help="print only the tool list (feed it to `pin`/`diff`)")
 
     mo = sub.add_parser("monitor", help="re-enumerate a live server and alert if any tool changed since pinned")
@@ -92,6 +107,8 @@ def main(argv=None):
     mo.add_argument("--protocol", default="auto")
     mo.add_argument("--scope", default="SCOPE.yaml")
     mo.add_argument("--timeout", type=float, default=30.0)
+    mo.add_argument("--sarif", help="also write SARIF 2.1.0 findings to this path")
+    mo.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
     mo.add_argument("--pins", default="pins.json", help="pin file; created as the baseline if missing")
     mo.add_argument("--update", action="store_true", help="accept the current tools as the new baseline")
 
@@ -128,6 +145,22 @@ def main(argv=None):
     ls2.add_argument("--arg", action="append", default=[])
     ls2.add_argument("--gullible", action="store_true")
     ls2.add_argument("-n", type=int, default=3, help="trials per attack/task pair")
+    ls2.add_argument("--fail-above", type=float, help="CI mode: exit 1 if the exposure score exceeds this; "
+                                                     "exit 3 if the run is invalid (errors, no baseline, stopped early)")
+    ls2.add_argument("--max-trials", type=int, help="refuse to start if the plan needs more trials than this")
+    ls2.add_argument("--max-minutes", type=float, help="stop between trials after this long; the run is then invalid")
+    ls2.add_argument("--max-tokens", type=int, help="stop between trials after this many model tokens; invalid")
+    ls2.add_argument("--dry-run", action="store_true", help="print the plan (pairs, trials) and exit; no calls")
+    ls2.add_argument("--sarif", help="also write SARIF 2.1.0 findings to this path")
+    ls2.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
+
+    sa = sub.add_parser("sarif", help="turn saved scan / drift / live-suite JSON into one SARIF 2.1.0 file")
+    sa.add_argument("--server", default="", help="name for --scan/--drift findings")
+    sa.add_argument("--scan", help="JSON printed by `enumerate` or `scan`")
+    sa.add_argument("--drift", help="JSON printed by `monitor` (changes + findings)")
+    sa.add_argument("--live", help="results.json from live-suite")
+    sa.add_argument("--artifact", default="mcp-config.json")
+    sa.add_argument("--out", required=True)
 
     sub.add_parser("labs", help="list the bundled labs (servers, tasks, attacks)")
     at = sub.add_parser("attacks", help="attack library tools")
@@ -196,6 +229,9 @@ def main(argv=None):
             return
         res = scan_manifest(tools)
         print(json.dumps({"server": a.url or a.server, "tools": inventory(tools), **res}, indent=2))
+        if a.sarif:
+            from .report.sarif import from_scan
+            _write_sarif(from_scan(a.url or a.server, res), a.sarif, a.artifact)
         raise SystemExit(1 if any(f["severity"] == "high" for f in res["findings"]) else 0)
 
     if a.cmd == "monitor":
@@ -219,6 +255,9 @@ def main(argv=None):
             return
         report = check(json.loads(pins_path.read_text()), tools)
         print(json.dumps(report, indent=2))
+        if a.sarif:
+            from .report.sarif import from_drift
+            _write_sarif(from_drift(a.url or a.server, report), a.sarif, a.artifact)
         if report["changes"]:
             kinds: dict = {}
             for c in report["changes"]:
@@ -228,6 +267,20 @@ def main(argv=None):
             print(f"DRIFT: {len(report['changes'])} tool(s) changed since pinned ({detail})", file=sys.stderr)
             raise SystemExit(1)
         print(f"ok: {len(tools)} tools match {a.pins}")
+        return
+
+    if a.cmd == "sarif":
+        from .report.sarif import from_drift, from_live, from_scan
+        found = []
+        if a.scan:
+            found += from_scan(a.server, json.loads(Path(a.scan).read_text()))
+        if a.drift:
+            found += from_drift(a.server, json.loads(Path(a.drift).read_text()))
+        if a.live:
+            found += from_live(load_results(a.live))
+        if not (a.scan or a.drift or a.live):
+            raise SystemExit("give at least one of --scan, --drift, --live")
+        _write_sarif(found, a.out, a.artifact)
         return
 
     if a.cmd == "labs":
@@ -273,20 +326,35 @@ def main(argv=None):
             attacks = base()
             for m in [m for m in a.mutators.split(",") if m]:
                 attacks += [mutate(x, m) for x in base()]
+            tasks = lab.tasks if lab else LIVE_TASKS
+            budget = Budget(a.max_trials, a.max_minutes * 60 if a.max_minutes else None, a.max_tokens)
+            planned = (len(attacks) + 1) * len(tasks) * a.n
+            print(f"plan: {len(attacks)} attacks x {len(tasks)} tasks + baseline, n={a.n} -> {planned} trials",
+                  file=sys.stderr)
+            over = budget.preflight(planned)
+            if over:
+                raise SystemExit(f"refused: {over}")
+            if a.dry_run:
+                print("dry run: no calls made")
+                return
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
             factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env)
             res = live_suite(gate, factory, a.server or lab.name, a.command, a.arg, a.collaborator, attacks,
-                             lab.tasks if lab else LIVE_TASKS, a.n, a.out,
+                             tasks, a.n, a.out,
                              specs=lab.specs() if lab else None, base_env=lab.env if lab else None,
-                             lab=lab.name if lab else None)
+                             lab=lab.name if lab else None, budget=budget)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
         except OutOfScope as e:
             raise SystemExit(f"refused: {e}")
         except SinkUnavailable as e:
             raise SystemExit(f"error: {e}")
+        res = stamp(res, "live_suite")
         Path(a.out, "results.json").write_text(json.dumps(res, indent=2))
         Path(a.out, "report.md").write_text(suite_markdown(res))
+        if a.sarif:
+            from .report.sarif import from_live
+            _write_sarif(from_live(res), a.sarif, a.artifact)
         o = res["overall"]
         print(f"live suite: exposure={res['summary']['headline']}/100  utility={res['summary']['baseline_utility']:.0%}  "
               f"false_alarm={res['summary']['baseline_false_alarm']:.0%}")
@@ -295,6 +363,15 @@ def main(argv=None):
               f"disagreements={o['disagreements']}  report={Path(a.out, 'report.md')}")
         if o["errors"]:
             print(f"WARNING: {o['errors']} trial(s) errored; errors are NOT counted as secure.")
+        sm = res["summary"]
+        if not sm["valid"]:
+            print("INVALID RUN: " + "; ".join(sm["invalid_reasons"]), file=sys.stderr)
+        if a.fail_above is not None:
+            if not sm["valid"]:
+                raise SystemExit(3)
+            if sm["headline"] > a.fail_above:
+                print(f"FAIL: exposure {sm['headline']} is above --fail-above {a.fail_above}", file=sys.stderr)
+                raise SystemExit(1)
         return
 
     if a.cmd in ("live-run", "proxy"):
@@ -326,7 +403,7 @@ def main(argv=None):
         except SinkUnavailable as e:
             raise SystemExit(f"error: {e}")
         out = Path(a.out) / "results.json"
-        out.write_text(json.dumps(res, indent=2))
+        out.write_text(json.dumps(stamp(res, "live_run"), indent=2))
         print(f"live run: injection={a.inject} n={res['n']} canary_arrived={res['canary_arrived']} "
               f"({res['arrival_rate']:.0%}, CI {res['ci'][0]:.0%}-{res['ci'][1]:.0%}) "
               f"canary_read={res['canary_read']} canary_in_answer={res['canary_in_answer']} "
@@ -359,7 +436,7 @@ def main(argv=None):
         raise SystemExit(0 if res["passed"] else 1)
 
     if a.cmd == "rescore":
-        old = json.loads(Path(a.results).read_text())
+        old = load_results(a.results)
         result, summary = rescore(old)
         path = write_report(result, summary, a.out, f"{result.get('meta', {}).get('agent', 'run')}-rescored")
         print(f"rescored: exposure={summary['headline']}  utility={summary['baseline_utility']:.0%}  "

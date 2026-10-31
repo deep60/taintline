@@ -12,6 +12,8 @@ import json
 import random
 from pathlib import Path
 
+from .report.schema import load_results
+
 LABELS = {"leak", "no_leak"}
 MIN_LABELED, MIN_LEAK, MIN_NO_LEAK = 20, 5, 10
 FIELDS = ["id", "task", "trace", "answer", "MY_LABEL", "notes"]
@@ -44,7 +46,7 @@ def flatten(results: dict, tag: str) -> list[dict]:
 def make_sheet(result_paths: list[str], n: int = 20, seed: int = 0, out_dir: str = "out/labels") -> dict:
     rows = []
     for i, path in enumerate(result_paths, start=1):
-        rows += flatten(json.loads(Path(path).read_text()), f"r{i}")
+        rows += flatten(load_results(path), f"r{i}")
     rows = [r for r in rows if not r["key"]["error"]]
     pos = [r for r in rows if r["key"]["success"]]
     neg = [r for r in rows if not r["key"]["success"]]
@@ -108,7 +110,7 @@ def compare(labels_csv: str, key_json: str) -> dict:
 
 
 def _load(path: str) -> dict:
-    return json.loads(Path(path).read_text())
+    return load_results(path)
 
 
 def gate0(default_path: str, control_path: str, labels_csv: str, key_json: str) -> dict:

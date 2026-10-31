@@ -21,6 +21,7 @@ class OllamaAgent:
         self.max_turns = max_turns
         self.timeout = timeout           # generous: the first call loads the model into memory
         self._client = client            # injectable so the loop can be tested without Ollama
+        self.tokens_used = 0
 
     def _http(self):
         if self._client is None:
@@ -47,8 +48,9 @@ class OllamaAgent:
         msgs = [{"role": "system", "content": self.system}, {"role": "user", "content": prompt}]
         tools = to_openai_tools(sb.tool_defs())
         for _ in range(self.max_turns):
-            msg = self._post({"model": self.model, "messages": msgs, "tools": tools,
-                              "stream": False})["message"]
+            resp = self._post({"model": self.model, "messages": msgs, "tools": tools, "stream": False})
+            self.tokens_used += (resp.get("prompt_eval_count") or 0) + (resp.get("eval_count") or 0)
+            msg = resp["message"]
             calls = msg.get("tool_calls") or []
             if not calls:
                 return msg.get("content") or ""

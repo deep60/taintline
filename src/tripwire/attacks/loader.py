@@ -25,6 +25,21 @@ class Attack:
     parts: list | None = None      # split payload: one part planted per call of target_tool
     env: dict | None = None        # extra environment for the lab servers in this attack's trials
 
+    @property
+    def family(self) -> str:
+        """Coarse attack family for coverage tables."""
+        if self.surface == "native":
+            return "native_poison"
+        if self.parts:
+            return "split_payload"
+        if self.after:
+            return "delayed_payload"
+        if self.id.split("+")[0].startswith("chain_"):
+            return "encoded_chain"
+        if self.surface == "tool_description":
+            return "description_poison"
+        return "persuasion"
+
     def injection(self) -> dict | None:
         if self.surface == "native":      # the lab server is itself malicious; nothing to plant
             return {"surface": "native"}

@@ -97,6 +97,17 @@ the wild (the malicious variant is the lab `rugpull` server), no OAuth for remot
 
 **Exit:** SARIF accepted by GitHub code scanning on a sample repo.
 
+### M4 status (2026-10-31)
+Built and tested (188 tests): `schema_version` + `kind` on every results file with a compatibility rule
+(`docs/SCHEMA.md`); SARIF 2.1.0 from scan, drift and live-suite results with stable fingerprints and a
+structural validator; `--sarif` on `enumerate`, `monitor`, `live-suite` plus `tripwire sarif`;
+`live-suite --fail-above` (exit 1 over threshold, exit 3 for an invalid run); budgets (`--max-trials`,
+`--max-minutes`, `--max-tokens`, `--dry-run`); a coverage table (attack family x surface) and an INVALID banner
+in the live-suite report. See `docs/CI.md`.
+Not done, and the exit check is not met: SARIF has not been uploaded to GitHub code scanning (needs a GitHub
+repo and your go-ahead), fixed temperature/seed are not set on any agent, and the old fake-sandbox `run` report
+does not get a SARIF writer.
+
 ## M5. Browser agents (2-3 weeks)
 Cheap route: a browser agent is an agent with a browser **MCP server** (e.g. Playwright MCP).
 1. Lab web server serving local pages: benign page, page with hidden injection (CSS-hidden text, HTML

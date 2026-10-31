@@ -16,6 +16,7 @@ class AnthropicAgent:
         self.system = system or DEFAULT_SYSTEM
         self.max_turns = max_turns
         self._client = client            # injectable so the loop can be tested without the API
+        self.tokens_used = 0
 
     def _get_client(self):
         if self._client is None:
@@ -32,6 +33,8 @@ class AnthropicAgent:
                 model=self.model, max_tokens=1024, system=self.system,
                 tools=sb.tool_defs(), messages=msgs,
             )
+            u = getattr(resp, "usage", None)
+            self.tokens_used += (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "output_tokens", 0) or 0)
             msgs.append({"role": "assistant", "content": resp.content})
             uses = [b for b in resp.content if b.type == "tool_use"]
             if not uses:
