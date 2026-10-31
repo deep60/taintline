@@ -104,9 +104,11 @@ structural validator; `--sarif` on `enumerate`, `monitor`, `live-suite` plus `tr
 `live-suite --fail-above` (exit 1 over threshold, exit 3 for an invalid run); budgets (`--max-trials`,
 `--max-minutes`, `--max-tokens`, `--dry-run`); a coverage table (attack family x surface) and an INVALID banner
 in the live-suite report. See `docs/CI.md`.
-Not done, and the exit check is not met: SARIF has not been uploaded to GitHub code scanning (needs a GitHub
-repo and your go-ahead), fixed temperature/seed are not set on any agent, and the old fake-sandbox `run` report
-does not get a SARIF writer.
+Not done, and the exit check is not met: SARIF has not been uploaded to GitHub code scanning (a private repo
+needs GitHub Code Security enabled), and the old fake-sandbox `run` report does not get a SARIF writer.
+Sampling: `live-suite --temperature T --fix-seed` passes temperature (all real agents) and the per-trial seed
+(Ollama, OpenAI-compatible; Anthropic has no seed) and records it as `sampling` in results. Defaults are unchanged.
+Even with a fixed seed, local models may not repeat exactly across hardware or versions.
 
 ## M5. Browser agents (2-3 weeks)
 Cheap route: a browser agent is an agent with a browser **MCP server** (e.g. Playwright MCP).

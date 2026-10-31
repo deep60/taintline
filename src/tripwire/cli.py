@@ -144,6 +144,9 @@ def main(argv=None):
         ls2.add_argument(flag, **kw)
     ls2.add_argument("--arg", action="append", default=[])
     ls2.add_argument("--gullible", action="store_true")
+    ls2.add_argument("--temperature", type=float, help="sampling temperature (default: provider default)")
+    ls2.add_argument("--fix-seed", action="store_true",
+                     help="pass each trial's seed to the model (Ollama, OpenAI-compatible); Anthropic has no seed")
     ls2.add_argument("-n", type=int, default=3, help="trials per attack/task pair")
     ls2.add_argument("--fail-above", type=float, help="CI mode: exit 1 if the exposure score exceeds this; "
                                                      "exit 3 if the run is invalid (errors, no baseline, stopped early)")
@@ -338,11 +341,13 @@ def main(argv=None):
                 print("dry run: no calls made")
                 return
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
-            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env)
+            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env,
+                                         temperature=a.temperature, fix_seed=a.fix_seed)
             res = live_suite(gate, factory, a.server or lab.name, a.command, a.arg, a.collaborator, attacks,
                              tasks, a.n, a.out,
                              specs=lab.specs() if lab else None, base_env=lab.env if lab else None,
                              lab=lab.name if lab else None, budget=budget)
+            res["sampling"] = {"temperature": a.temperature, "seed_fixed": a.fix_seed}
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
         except OutOfScope as e:

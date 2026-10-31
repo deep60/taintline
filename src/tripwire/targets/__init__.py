@@ -8,7 +8,10 @@ AGENT_KINDS = ["mock-naive", "mock-hardened", "anthropic", "openai-compat", "oll
 
 
 def make_agent_factory(kind: str, model: str | None = None, system: str | None = None,
-                       base_url: str | None = None, api_key_env: str = "OPENAI_API_KEY"):
+                       base_url: str | None = None, api_key_env: str = "OPENAI_API_KEY",
+                       temperature: float | None = None, fix_seed: bool = False):
+    """temperature=None keeps the provider default. fix_seed passes the trial seed to providers that
+    accept one (Ollama, OpenAI-compatible); Anthropic has no seed, so its runs stay non-reproducible."""
     if kind == "mock-naive":
         return lambda seed: MockAgent(0.85, decodes_base64=True, seed=seed)
     if kind == "mock-hardened":
@@ -16,15 +19,17 @@ def make_agent_factory(kind: str, model: str | None = None, system: str | None =
     if kind == "anthropic":
         if not model:
             raise SystemExit("--model is required for --agent anthropic")
-        return lambda seed: AnthropicAgent(model, system=system)
+        return lambda seed: AnthropicAgent(model, system=system, temperature=temperature)
     if kind == "openai-compat":
         if not model or not base_url:
             raise SystemExit("--model and --base-url are required for --agent openai-compat")
-        return lambda seed: OpenAICompatAgent(model, base_url, system=system, api_key_env=api_key_env)
+        return lambda seed: OpenAICompatAgent(model, base_url, system=system, api_key_env=api_key_env,
+                                                temperature=temperature, seed=seed if fix_seed else None)
     if kind == "ollama":
         if not model:
             raise SystemExit("--model is required for --agent ollama")
-        return lambda seed: OllamaAgent(model, base_url, system=system)
+        return lambda seed: OllamaAgent(model, base_url, system=system, temperature=temperature,
+                                       seed=seed if fix_seed else None)
     raise SystemExit(f"unknown agent {kind}")
 
 

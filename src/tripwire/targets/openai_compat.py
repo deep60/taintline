@@ -18,7 +18,8 @@ def to_openai_tools(tool_defs: list[dict]) -> list[dict]:
 class OpenAICompatAgent:
     def __init__(self, model: str, base_url: str, system: str | None = None,
                  api_key_env: str = "OPENAI_API_KEY", max_turns: int = 8,
-                 timeout: float = 120.0, client=None):
+                 timeout: float = 120.0, client=None,
+                 temperature: float | None = None, seed: int | None = None):
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.system = system or DEFAULT_SYSTEM
@@ -27,6 +28,7 @@ class OpenAICompatAgent:
         self.timeout = timeout
         self._client = client            # injectable so the loop can be tested without a network
         self.tokens_used = 0
+        self.sampling = {k: v for k, v in (("temperature", temperature), ("seed", seed)) if v is not None}
 
     def _http(self):
         if self._client is None:
@@ -48,7 +50,7 @@ class OpenAICompatAgent:
         msgs = [{"role": "system", "content": self.system}, {"role": "user", "content": prompt}]
         tools = to_openai_tools(sb.tool_defs())
         for _ in range(self.max_turns):
-            resp = self._post({"model": self.model, "messages": msgs, "tools": tools})
+            resp = self._post({"model": self.model, "messages": msgs, "tools": tools, **self.sampling})
             self.tokens_used += (resp.get("usage") or {}).get("total_tokens") or 0
             msg = resp["choices"][0]["message"]
             calls = msg.get("tool_calls") or []

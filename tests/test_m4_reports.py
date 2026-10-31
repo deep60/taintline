@@ -243,3 +243,16 @@ def test_sarif_command_merges_saved_files(scope, tmp_path):
     assert validate_sarif(doc) == []
     ids = {r["ruleId"] for r in doc["runs"][0]["results"]}
     assert any(i.startswith("tripwire/static/") for i in ids) and "tripwire/dynamic/canary_delivered" in ids
+
+
+def test_sampling_options_reach_the_request():
+    from tripwire.targets import make_agent_factory
+
+    o = make_agent_factory("ollama", "m", temperature=0, fix_seed=True)(7)
+    assert o.options == {"temperature": 0, "seed": 7}
+    o = make_agent_factory("ollama", "m")(7)
+    assert o.options == {}                       # default: provider behaviour unchanged
+    c = make_agent_factory("openai-compat", "m", base_url="http://x", temperature=0.2, fix_seed=True)(3)
+    assert c.sampling == {"temperature": 0.2, "seed": 3}
+    a = make_agent_factory("anthropic", "m", temperature=0, fix_seed=True)(3)
+    assert a.sampling == {"temperature": 0}      # no seed on this API

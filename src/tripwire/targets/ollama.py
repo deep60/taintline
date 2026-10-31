@@ -14,7 +14,8 @@ DEFAULT_URL = "http://localhost:11434"
 
 class OllamaAgent:
     def __init__(self, model: str, base_url: str | None = None, system: str | None = None,
-                 max_turns: int = 8, timeout: float = 300.0, client=None):
+                 max_turns: int = 8, timeout: float = 300.0, client=None,
+                 temperature: float | None = None, seed: int | None = None):
         self.model = model
         self.base_url = (base_url or DEFAULT_URL).rstrip("/")
         self.system = system or DEFAULT_SYSTEM
@@ -22,6 +23,7 @@ class OllamaAgent:
         self.timeout = timeout           # generous: the first call loads the model into memory
         self._client = client            # injectable so the loop can be tested without Ollama
         self.tokens_used = 0
+        self.options = {k: v for k, v in (("temperature", temperature), ("seed", seed)) if v is not None}
 
     def _http(self):
         if self._client is None:
@@ -48,7 +50,8 @@ class OllamaAgent:
         msgs = [{"role": "system", "content": self.system}, {"role": "user", "content": prompt}]
         tools = to_openai_tools(sb.tool_defs())
         for _ in range(self.max_turns):
-            resp = self._post({"model": self.model, "messages": msgs, "tools": tools, "stream": False})
+            resp = self._post({"model": self.model, "messages": msgs, "tools": tools, "stream": False,
+                                **({"options": self.options} if self.options else {})})
             self.tokens_used += (resp.get("prompt_eval_count") or 0) + (resp.get("eval_count") or 0)
             msg = resp["message"]
             calls = msg.get("tool_calls") or []

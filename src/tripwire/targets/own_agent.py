@@ -11,12 +11,14 @@ class AgentTimeout(RuntimeError):
 
 
 class AnthropicAgent:
-    def __init__(self, model: str, system: str | None = None, max_turns: int = 8, client=None):
+    def __init__(self, model: str, system: str | None = None, max_turns: int = 8, client=None,
+                 temperature: float | None = None):
         self.model = model
         self.system = system or DEFAULT_SYSTEM
         self.max_turns = max_turns
         self._client = client            # injectable so the loop can be tested without the API
         self.tokens_used = 0
+        self.sampling = {} if temperature is None else {"temperature": temperature}   # the API has no seed
 
     def _get_client(self):
         if self._client is None:
@@ -31,7 +33,7 @@ class AnthropicAgent:
         for _ in range(self.max_turns):
             resp = client.messages.create(
                 model=self.model, max_tokens=1024, system=self.system,
-                tools=sb.tool_defs(), messages=msgs,
+                tools=sb.tool_defs(), messages=msgs, **self.sampling,
             )
             u = getattr(resp, "usage", None)
             self.tokens_used += (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "output_tokens", 0) or 0)
