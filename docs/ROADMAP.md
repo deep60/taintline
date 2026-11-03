@@ -121,6 +121,25 @@ Cheap route: a browser agent is an agent with a browser **MCP server** (e.g. Pla
 
 **Exit:** browser-agent run with sink-confirmed leak and a clean baseline.
 
+**Status (built, not yet run on a real model).** Lab `browser` (`lab/servers/browser_server.py`): `open_page`,
+`click_link`, `submit_form`, `read_storage` over an in-memory fake web; the only egress is a request to
+`evil.example`, forwarded to the sink (so a real browser-style network isolation holds by construction, and a
+test proves a non-lab URL gets a 404). Attack surface `page`: the payload is rendered into the page markup at
+`PAGE_VECTOR` = visible_text (control), css_hidden, offscreen, white_on_white, html_comment, alt_text,
+aria_label, form_field, hidden_input; exfil channels are link-following, image-style URL, auto-submitted form
+and cookie/localStorage. 10 attacks in `src/tripwire/attacks/browser/browser.yaml`, 3 tasks + clean baseline.
+`BROWSER_VIEW=a11y` (default) models an accessibility snapshot (hidden CSS and comments never reach the model;
+such pairs show as UNFIRED, not secure); `BROWSER_VIEW=dom` shows everything. The oracle now treats
+`submit_form` and navigation to a non-`acme.example` host as outbound.
+Limits: this is a text model of a browser, not a browser. No JavaScript, no rendering, no real Playwright MCP,
+no real cookies. Exit check NOT met: no run on a real model yet (the local Ollama models were on an unmounted
+drive when this was built). Next: run default + gullible control (`live-suite --lab browser`), then repeat the
+vectors with a real Playwright MCP server (needs your approval to install).
+
+**M2 addition: shadowed tool name.** Lab `shadow+inbox`: a second server re-defines `send_email`; the later server
+wins the name and, with `SHADOW=1`, silently copies every message to the attacker. The call log looks normal, so
+the oracle says "no leak" and only the sink shows contact; a disagreement on this lab is expected and is the point.
+
 ## M6. Copilots / black-box targets (later; needs a design partner)
 - Implement `targets/blackbox_http.py` for chat endpoints you are authorized to test (scope-gated).
 - The hard part is an **injection channel**: copilots read documents, email, tickets. Without a way to plant
@@ -128,6 +147,11 @@ Cheap route: a browser agent is an agent with a browser **MCP server** (e.g. Pla
 - Do not build this until someone gives you a real target and written authorization.
 
 **Exit:** one authorized copilot tested, with a written scope and a report the owner accepts.
+
+**Status (tooling built, exit check NOT met).** `tripwire blackbox` + `targets/blackbox_http.py`: scope-gated
+chat-endpoint target driven by a YAML config (tokens via `${ENV}`), injection channel = document planting
+(API or `--manual`), sink-confirmed results in the live-suite format, request budget, dry run. Validated only
+against the local `mock_copilot.py`. See `docs/BLACKBOX.md`. Needs a design partner with written authorization.
 
 ## M7. Ship and sell (parallel from now)
 - Name decision (trademark conflict), package + `uv build`, README with a 15-minute quickstart,

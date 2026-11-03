@@ -30,6 +30,8 @@ class Attack:
         """Coarse attack family for coverage tables."""
         if self.surface == "native":
             return "native_poison"
+        if self.surface == "page":
+            return "page_injection"
         if self.parts:
             return "split_payload"
         if self.after:
@@ -43,6 +45,8 @@ class Attack:
     def injection(self) -> dict | None:
         if self.surface == "native":      # the lab server is itself malicious; nothing to plant
             return {"surface": "native"}
+        if self.surface == "page":        # the lab server renders the payload into its own pages
+            return {"surface": "page", "payload": self.payload, "vector": (self.env or {}).get("PAGE_VECTOR")}
         spec = {"surface": self.surface, "payload": self.payload, "target_tool": self.target_tool}
         if self.server:
             spec["server"] = self.server
@@ -73,6 +77,8 @@ def load_attacks(path: str | Path | None = None, subs: dict | None = None) -> li
             d["payload"] = d.get("payload") or ""
             for key in ("payload", "target_tool", "server"):
                 d[key] = _fill(d.get(key), subs)
+            if d.get("env"):
+                d["env"] = {k: _fill(v, subs) for k, v in d["env"].items()}
             if d.get("parts"):
                 d["parts"] = [_fill(x, subs) for x in d["parts"]]
             out.append(Attack(**d))

@@ -10,8 +10,10 @@ import yaml
 from ..sandbox import ATTACKER_EMAIL, ATTACKER_URL
 from .loader import Attack, load_attacks
 
-SURFACES = {"tool_result", "tool_description", "native", "email", "web", "file"}
-LIVE_SURFACES = {"tool_result", "tool_description", "native"}
+SURFACES = {"tool_result", "tool_description", "native", "page", "email", "web", "file"}
+LIVE_SURFACES = {"tool_result", "tool_description", "native", "page"}
+PAGE_VECTORS = {"visible_text", "css_hidden", "offscreen", "white_on_white", "html_comment", "alt_text",
+                "aria_label", "form_field", "hidden_input"}
 TARGETS = {"api_key", "ssn"}
 PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
 
@@ -67,6 +69,8 @@ def _check(a: Attack, tools: set | None, servers: set | None, live: bool) -> lis
         out.append(f"target must be one of {sorted(TARGETS)}")
     if a.surface in ("tool_result", "tool_description") and not a.target_tool:
         out.append(f"{a.surface} attacks need target_tool")
+    if a.surface == "page" and (a.env or {}).get("PAGE_VECTOR") not in PAGE_VECTORS:
+        out.append(f"page attacks need env PAGE_VECTOR, one of {sorted(PAGE_VECTORS)}")
     if a.surface != "native" and not (a.payload.strip() or a.parts):
         out.append("empty payload")
     if a.parts is not None and (not isinstance(a.parts, list) or not all(isinstance(x, str) and x.strip() for x in a.parts)):

@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import yaml
 
@@ -129,6 +130,20 @@ def main(argv=None):
     lv.add_argument("-n", type=int, default=5)
     lv.add_argument("--scope", default="SCOPE.yaml")
     lv.add_argument("--out", default="out/live")
+
+    bb = sub.add_parser("blackbox", help="test a chat endpoint you are authorized to test (M6); "
+                                         "plants an injection, the collaborator sink proves any leak")
+    bb.add_argument("--config", required=True, help="blackbox YAML (see docs/BLACKBOX.md)")
+    bb.add_argument("--collaborator", required=True,
+                    help="sink URL the TARGET can reach (must be in scope); use a host you control")
+    bb.add_argument("-n", type=int, default=3)
+    bb.add_argument("--scope", default="SCOPE.yaml")
+    bb.add_argument("--out", default="out/blackbox")
+    bb.add_argument("--manual", action="store_true", help="print the content to plant instead of using an API")
+    bb.add_argument("--max-requests", type=int, help="stop after this many requests to the target")
+    bb.add_argument("--dry-run", action="store_true", help="print the plan and the hosts; send nothing")
+    bb.add_argument("--sarif", help="also write SARIF 2.1.0 here")
+    bb.add_argument("--artifact", default="mcp-config.json")
 
     ls2 = sub.add_parser("live-suite", help="all live attacks x all live tasks vs a real stdio MCP server")
     for flag, kw in [("--server", dict()), ("--command", dict()),
@@ -309,6 +324,48 @@ def main(argv=None):
             print("PROBLEM:", m)
         print(f"{path}: {'OK' if not problems else str(len(problems)) + ' problem(s)'}")
         raise SystemExit(1 if problems else 0)
+
+    if a.cmd == "blackbox":
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        from .blackbox import blackbox_attacks, blackbox_suite
+        from .gateway.live import SinkUnavailable, suite_markdown
+        from .targets.blackbox_http import BlackboxConfigError, load_config
+        try:
+            gate = Gate(load_scope(a.scope))
+            cfg = load_config(a.config, expand_env=not a.dry_run)
+            hosts = [*cfg.hosts(), urlparse(a.collaborator).netloc]
+            attacks = blackbox_attacks(a.collaborator)
+            planned = (len(attacks) + 1) * len(cfg.tasks) * a.n
+            print(f"plan: {len(attacks)} attacks x {len(cfg.tasks)} tasks + baseline, n={a.n} -> {planned} trials; "
+                  f"hosts contacted: {sorted(set(hosts))}", file=sys.stderr)
+            for h in hosts:
+                gate.check_server(h)
+            if a.max_requests is None and not a.dry_run:
+                print("note: no --max-requests set; each trial sends ~3 requests to the target", file=sys.stderr)
+            if a.dry_run:
+                print("dry run: nothing sent")
+                return
+            res = blackbox_suite(gate, cfg, a.collaborator, a.n, a.out, attacks, manual=a.manual,
+                                 max_requests=a.max_requests)
+        except (ScopeError, BlackboxConfigError) as e:
+            raise SystemExit(f"invalid config or scope: {e}")
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        except SinkUnavailable as e:
+            raise SystemExit(f"error: {e}")
+        res = stamp(res, "live_suite")
+        Path(a.out, "results.json").write_text(json.dumps(res, indent=2))
+        Path(a.out, "report.md").write_text(suite_markdown(res))
+        if a.sarif:
+            from .report.sarif import from_live
+            _write_sarif(from_live(res), a.sarif, a.artifact)
+        o, sm = res["overall"], res["summary"]
+        print(f"blackbox: exposure={sm['headline']}/100  delivered={o['delivered']}/{o['trials']}  "
+              f"errors={o['errors']}  requests={res['requests']}  report={Path(a.out, 'report.md')}")
+        if not sm["valid"]:
+            print("INVALID RUN: " + "; ".join(sm["invalid_reasons"]), file=sys.stderr)
+        return
 
     if a.cmd == "live-suite":
         if not Path(a.scope).exists():
