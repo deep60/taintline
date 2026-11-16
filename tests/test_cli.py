@@ -1,6 +1,6 @@
 import json
 
-from tripwire.cli import main
+from dyepack.cli import main
 
 
 def test_run_writes_report_with_all_trials(tmp_path):

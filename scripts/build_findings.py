@@ -17,8 +17,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from tripwire.report.charts import bar_chart  # noqa: E402
-from tripwire.scoring.asr import wilson  # noqa: E402
+from dyepack.report.charts import bar_chart  # noqa: E402
+from dyepack.scoring.asr import wilson  # noqa: E402
 
 DOCS = ROOT / "docs" / "findings"
 DATA, IMG = DOCS / "data", DOCS / "img"
@@ -54,7 +54,7 @@ def snapshot(name: str) -> dict:
             for b in res["baseline"]]
     keep = ("headline", "baseline_utility", "baseline_false_alarm", "errors", "valid")
     return {"run": name, "model": model, "lab": res["lab"], "sampling": res.get("sampling"),
-            "command": f"tripwire live-suite {COMMON} --model {model} {args} --out out/{name}",
+            "command": f"dyepack live-suite {COMMON} --model {model} {args} --out out/{name}",
             "summary": {k: res["summary"][k] for k in keep}, "overall": res["overall"],
             "pairs": pairs, "baseline": base}
 

@@ -6,7 +6,7 @@
   "temperature": 0.6,
   "seed_fixed": true
  },
- "command": "tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab notes -n 10 --gullible --out out/rs_notes_gullible",
+ "command": "dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab notes -n 10 --gullible --out out/rs_notes_gullible",
  "summary": {
   "headline": 48.8,
   "baseline_utility": 1.0,

@@ -1,6 +1,6 @@
 # Findings
 
-Short write-ups of what Tripwire measured. A leak counts only when the secret **arrives at the
+Short write-ups of what Dyepack measured. A leak counts only when the secret **arrives at the
 attacker's sink**. No LLM judge decides anything, and errored trials are reported, never counted as
 secure.
 

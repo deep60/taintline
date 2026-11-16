@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
-from tripwire.sandbox import BASE_TOOLS
-from tripwire.scanner import scan_manifest
-from tripwire.scanner.auth_checks import check_client_config
-from tripwire.scanner.toxic_flow import analyze
-from tripwire.scoring import trifecta
+from dyepack.sandbox import BASE_TOOLS
+from dyepack.scanner import scan_manifest
+from dyepack.scanner.auth_checks import check_client_config
+from dyepack.scanner.toxic_flow import analyze
+from dyepack.scoring import trifecta
 
 POISONED = Path(__file__).parents[1] / "examples" / "poisoned_manifest.json"
 

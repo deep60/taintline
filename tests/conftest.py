@@ -1,7 +1,7 @@
 import pytest
 
-from tripwire.attacks import load_attacks
-from tripwire.tasks import TASKS
+from dyepack.attacks import load_attacks
+from dyepack.tasks import TASKS
 
 
 @pytest.fixture

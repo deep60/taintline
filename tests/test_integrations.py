@@ -5,14 +5,14 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from tripwire import notify
-from tripwire.cli import main
-from tripwire.report import frameworks
-from tripwire.report.ocsf import CLASS_UID, to_ocsf, validate_ocsf, write_ocsf
-from tripwire.report.sarif import Finding, from_drift, to_sarif, validate_sarif
-from tripwire.scope import Gate, OutOfScope, parse_scope
+from dyepack import notify
+from dyepack.cli import main
+from dyepack.report import frameworks
+from dyepack.report.ocsf import CLASS_UID, to_ocsf, validate_ocsf, write_ocsf
+from dyepack.report.sarif import Finding, from_drift, to_sarif, validate_sarif
+from dyepack.scope import Gate, OutOfScope, parse_scope
 
-SECRET_ENV = "TRIPWIRE_TEST_SECRET"
+SECRET_ENV = "DYEPACK_TEST_SECRET"
 FINDINGS = [
     Finding("dynamic/canary_delivered", "error", "leaked", "lab", "atk", "task"),
     Finding("drift/modified", "error", "tool changed", "srv", "read_note", key="description"),
@@ -158,7 +158,7 @@ def test_ocsf_cli_from_saved_drift(tmp_path):
 def test_sign_verify_roundtrip_and_tamper():
     body = b'{"a":1}'
     sig = notify.sign(body, "k", 1000)
-    h = {"X-Tripwire-Timestamp": "1000", "X-Tripwire-Signature": sig}
+    h = {"X-Dyepack-Timestamp": "1000", "X-Dyepack-Signature": sig}
     assert notify.verify(body, h, "k", now=1000)
     assert not notify.verify(b'{"a":2}', h, "k", now=1000)         # body changed
     assert not notify.verify(body, h, "other", now=1000)           # wrong secret
@@ -183,7 +183,7 @@ def test_send_delivers_signed_payload(receiver):
     got = json.loads(body)
     assert got["schema"] == notify.SCHEMA and got["event"] == "leak" and got["counts"]["findings"] == 3
     assert "OWASP-LLM:LLM01" in got["findings"][0]["frameworks"]
-    assert headers["X-Tripwire-Event"] == "leak"
+    assert headers["X-Dyepack-Event"] == "leak"
 
 
 def test_send_refuses_destination_outside_scope(receiver):
@@ -313,7 +313,7 @@ def test_monitor_notify_destination_must_be_in_scope(monitor_env):
 
 
 def test_live_suite_report_has_framework_mapping():
-    from tripwire.gateway.live import suite_markdown
+    from dyepack.gateway.live import suite_markdown
     res = {"server": "s", "lab": "s", "summary": {"valid": True, "invalid_reasons": [], "headline": 5.0,
                                                    "baseline_utility": 1.0, "baseline_false_alarm": 0.0,
                                                    "worst_case": None},

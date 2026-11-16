@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from tripwire.attacks import load_attacks
-from tripwire.meta import attack_library_hash, collect
+from dyepack.attacks import load_attacks
+from dyepack.meta import attack_library_hash, collect
 
 
 def test_hash_is_stable_under_reordering():
@@ -19,7 +19,7 @@ def test_collect_has_the_pins_we_need():
     atks = load_attacks()
     m = collect(agent="anthropic", model="x", system_override=True, n=3, attacks=atks,
                 mutators=["base64"])
-    for key in ("tripwire_version", "git_sha", "date_utc", "agent", "model", "system_override",
+    for key in ("dyepack_version", "git_sha", "date_utc", "agent", "model", "system_override",
                 "n", "attack_library_hash", "attack_count", "mutators", "python"):
         assert key in m
     assert m["model"] == "x" and m["system_override"] is True and m["attack_count"] == len(atks)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tripwire.report.charts import bar_chart
+from dyepack.report.charts import bar_chart
 
 ROOT = Path(__file__).resolve().parents[1]
 

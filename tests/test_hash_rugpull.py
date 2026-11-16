@@ -1,5 +1,5 @@
-from tripwire.gateway.hash import hash_tool, hash_tools
-from tripwire.scanner.rugpull import diff_pins, pin
+from dyepack.gateway.hash import hash_tool, hash_tools
+from dyepack.scanner.rugpull import diff_pins, pin
 
 T1 = {"name": "add", "description": "Add numbers.", "inputSchema": {"type": "object"}}
 

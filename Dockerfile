@@ -1,6 +1,6 @@
-# Tripwire in a container. Default command: the one-minute demo, which needs no network at all:
-#   docker build -t tripwire .
-#   docker run --rm --network none tripwire
+# Dyepack in a container. Default command: the one-minute demo, which needs no network at all:
+#   docker build -t dyepack .
+#   docker run --rm --network none dyepack
 # See docs/DOCKER.md for running against a model on your machine.
 FROM python:3.12-slim
 
@@ -17,14 +17,15 @@ WORKDIR /app
 # dependencies first, so editing source does not reinstall them
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
+COPY README.md LICENSE ./
 COPY src ./src
 COPY lab ./lab
 RUN uv sync --frozen --no-dev
 
 # never run as root; results go to /app/out (mount a folder there to keep them)
-RUN useradd --create-home --uid 10001 tripwire && mkdir -p /app/out && chown tripwire /app/out
-USER tripwire
+RUN useradd --create-home --uid 10001 dyepack && mkdir -p /app/out && chown dyepack /app/out
+USER dyepack
 VOLUME ["/app/out"]
 
-ENTRYPOINT ["tripwire"]
+ENTRYPOINT ["dyepack"]
 CMD ["demo"]

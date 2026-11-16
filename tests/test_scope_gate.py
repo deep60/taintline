@@ -1,6 +1,6 @@
 import pytest
 
-from tripwire.scope import Gate, OutOfScope, ScopeError, parse_scope
+from dyepack.scope import Gate, OutOfScope, ScopeError, parse_scope
 
 
 def good(**kw):

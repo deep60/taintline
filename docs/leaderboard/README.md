@@ -45,10 +45,10 @@ Not ranked: `rs_notes_default` (redsage-qwen3-8b-ins, 1 errored trial(s)); `rs_n
 ## Reproduce
 
 ```bash
-tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model qwen3.8-9b-heretic-uncensored --lab notes -n 10 --out out/hx_notes_default
-tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model qwen3.8-9b-heretic-uncensored --lab notes -n 10 --gullible --out out/hx_notes_gullible
-tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --out out/rs_browser_default
-tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --gullible --out out/rs_browser_gullible
-tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab notes -n 10 --out out/rs_notes_default
-tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab notes -n 10 --gullible --out out/rs_notes_gullible
+dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model qwen3.8-9b-heretic-uncensored --lab notes -n 10 --out out/hx_notes_default
+dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model qwen3.8-9b-heretic-uncensored --lab notes -n 10 --gullible --out out/hx_notes_gullible
+dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --out out/rs_browser_default
+dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --gullible --out out/rs_browser_gullible
+dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab notes -n 10 --out out/rs_notes_default
+dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab notes -n 10 --gullible --out out/rs_notes_gullible
 ```

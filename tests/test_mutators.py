@@ -2,8 +2,8 @@ import base64
 
 import pytest
 
-from tripwire.attacks import load_attacks, mutate
-from tripwire.attacks.mutators import homoglyph, strip_zero_width, zero_width
+from dyepack.attacks import load_attacks, mutate
+from dyepack.attacks.mutators import homoglyph, strip_zero_width, zero_width
 
 
 def test_base64_mutator_roundtrip(attacks):

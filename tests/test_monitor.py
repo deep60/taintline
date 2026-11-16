@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from tripwire.cli import main
+from dyepack.cli import main
 
 SERVER_TMPL = '''
 from mcp.server.mcpserver import MCPServer

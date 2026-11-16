@@ -1,4 +1,4 @@
-# Contributing to Tripwire
+# Contributing to Dyepack
 
 The easiest way to contribute is **an attack**: a few lines of YAML, no Python. Every attack is
 run against real MCP lab servers, and it only counts when the planted secret **arrives at the
@@ -16,15 +16,15 @@ attacker's sink**. Nothing is scored by an LLM judge.
 ## Set up
 
 ```bash
-git clone https://github.com/deep60/tripwire && cd tripwire
+git clone https://github.com/deep60/dyepack && cd dyepack
 uv sync
 uv run python -m pytest -q
-uv run tripwire demo          # watch one leak get proven, no model needed
+uv run dyepack demo          # watch one leak get proven, no model needed
 ```
 
 ## Add an attack (good first contribution)
 
-1. **Pick a lab.** Run `uv run tripwire labs`. Most labs are built from templates (`inbox`, `web`,
+1. **Pick a lab.** Run `uv run dyepack labs`. Most labs are built from templates (`inbox`, `web`,
    `files+inbox`, `db+web`, `poisoned+inbox`), and one generic attack runs in all of them. `notes`,
    `browser` and `shadow+inbox` have their own attack files.
 2. **Copy a starter** from [examples/attacks/](examples/attacks/):
@@ -36,18 +36,18 @@ uv run tripwire demo          # watch one leak get proven, no model needed
    reference is in [docs/ATTACKS.md](docs/ATTACKS.md).
 4. **Validate, and look at exactly what the lab will plant:**
    ```bash
-   uv run tripwire attacks validate my_attack.yaml --lab inbox --show
+   uv run dyepack attacks validate my_attack.yaml --lab inbox --show
    ```
 5. **Run it, if you have a local model** (optional, but it makes the PR much stronger). This needs
    LM Studio or Ollama, the sink running (`python3 lab/collaborator/server.py`), and the lab's
    servers plus `127.0.0.1:8099` listed in your `SCOPE.yaml`:
    ```bash
-   uv run tripwire live-suite --lab inbox --attacks my_attack.yaml -n 3 \
+   uv run dyepack live-suite --lab inbox --attacks my_attack.yaml -n 3 \
      --agent openai-compat --model YOUR_MODEL --base-url http://localhost:1234/v1 --out out/my_attack
    ```
    Check the **`fired`** column first. If it's 0, the payload never reached the model, and a 0%
    leak rate means nothing. Then look at `out/my_attack/replay.html` to see what the agent did.
-6. **Open a PR** that adds your entry to the lab's attack file (`src/tripwire/attacks/templates/generic.yaml`
+6. **Open a PR** that adds your entry to the lab's attack file (`src/dyepack/attacks/templates/generic.yaml`
    for template labs, `attacks/live/notes.yaml`, `attacks/browser/browser.yaml`, ...). Fill in the
    PR template. If you ran it, include the report table.
 
@@ -56,11 +56,11 @@ model X" is a result.
 
 ## Other contributions
 
-- **New lab:** a server in `lab/servers/`, tasks and wiring in `src/tripwire/labs.py`, plus a test.
+- **New lab:** a server in `lab/servers/`, tasks and wiring in `src/dyepack/labs.py`, plus a test.
   Open an issue first.
 - **Results for a model:** run the labs on a model we haven't covered and open an issue with the
   run folders. See [docs/leaderboard/](docs/leaderboard/) for what gets published.
-- **Bugs:** include the command, the output and `uv run tripwire --help | head -3`.
+- **Bugs:** include the command, the output and `uv run dyepack --help | head -3`.
 
 ## Before you push
 

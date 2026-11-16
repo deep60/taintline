@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from tripwire.gateway.hash import hash_tools
-from tripwire.gateway.mcp_sandbox import MCPSandbox
-from tripwire.gateway.proxy_http import HttpProxy
-from tripwire.scanner.enumerate import enumerate_url
-from tripwire.scanner.rugpull import check, pin
-from tripwire.scope import Gate, OutOfScope, parse_scope
+from dyepack.gateway.hash import hash_tools
+from dyepack.gateway.mcp_sandbox import MCPSandbox
+from dyepack.gateway.proxy_http import HttpProxy
+from dyepack.scanner.enumerate import enumerate_url
+from dyepack.scanner.rugpull import check, pin
+from dyepack.scope import Gate, OutOfScope, parse_scope
 
 SERVERS = Path(__file__).parent.parent / "lab" / "servers"
 

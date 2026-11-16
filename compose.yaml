@@ -3,7 +3,7 @@
 services:
   demo:
     build: .
-    image: tripwire:latest      # same name as `docker build -t tripwire .`, so there is one image, not two
+    image: dyepack:latest      # same name as `docker build -t dyepack .`, so there is one image, not two
     network_mode: none
     read_only: true
     tmpfs: [/tmp]

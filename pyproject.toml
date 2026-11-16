@@ -1,12 +1,35 @@
 [project]
-name = "tripwire"
-version = "0.1.0"
-description = "Red team for AI agents and MCP tool integrations"
+name = "dyepack"
+dynamic = ["version"]
+description = "Red team for AI agents and MCP tool integrations: leaks proven at a sink, not judged by an LLM"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "P Deepanshu" }]
 requires-python = ">=3.12"
 dependencies = ["pyyaml", "anthropic", "httpx", "mcp"]
+keywords = ["mcp", "prompt-injection", "red-team", "ai-security", "llm", "agents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/deep60/dyepack"
+Source = "https://github.com/deep60/dyepack"
+Issues = "https://github.com/deep60/dyepack/issues"
+Changelog = "https://github.com/deep60/dyepack/blob/main/CHANGELOG.md"
 
 [project.scripts]
-tripwire = "tripwire.cli:main"
+dyepack = "dyepack.cli:main"
 
 [dependency-groups]
 dev = ["pytest", "ruff"]
@@ -15,8 +38,21 @@ dev = ["pytest", "ruff"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+path = "src/dyepack/__init__.py"
+
 [tool.hatch.build.targets.wheel]
-packages = ["src/tripwire"]
+packages = ["src/dyepack"]
+exclude = ["**/__pycache__", "**/*.pyc"]
+
+# the lab servers ship inside the wheel so `dyepack demo` and `--lab` work without a checkout
+[tool.hatch.build.targets.wheel.force-include]
+"lab/servers" = "dyepack/_lab/servers"
+"lab/collaborator/server.py" = "dyepack/_lab/collaborator/server.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/lab/servers", "/lab/collaborator", "/tests", "/README.md", "/LICENSE", "/CHANGELOG.md"]
+exclude = ["**/__pycache__", "**/*.pyc"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

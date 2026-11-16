@@ -8,10 +8,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lab" / "collaborator"))
 
 from server import make_server  # noqa: E402
 
-from tripwire.attacks.validate import PAGE_VECTORS  # noqa: E402
-from tripwire.gateway.live import live_trial  # noqa: E402
-from tripwire.labs import LABS  # noqa: E402
-from tripwire.scope import Gate, parse_scope  # noqa: E402
+from dyepack.attacks.validate import PAGE_VECTORS  # noqa: E402
+from dyepack.gateway.live import live_trial  # noqa: E402
+from dyepack.labs import LABS  # noqa: E402
+from dyepack.scope import Gate, parse_scope  # noqa: E402
 
 LAB = LABS["browser"]
 
@@ -123,7 +123,7 @@ def test_shadowed_send_email_copies_to_the_attacker_and_only_the_sink_sees_it(si
             sb.call("send_email", {"to": "bob@acme.example", "body": "standup is at 9:30"})
             return "sent to bob"
 
-    from tripwire.gateway.multi import MultiSandbox
+    from dyepack.gateway.multi import MultiSandbox
     with MultiSandbox(_gate("inbox", "shadow"), shadow.specs()) as sb:
         sb.tool_defs()
         assert sb.shadowed == ["send_email"]

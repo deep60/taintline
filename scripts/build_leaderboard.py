@@ -18,8 +18,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from tripwire.report.charts import bar_chart  # noqa: E402
-from tripwire.scoring.asr import wilson  # noqa: E402
+from dyepack.report.charts import bar_chart  # noqa: E402
+from dyepack.scoring.asr import wilson  # noqa: E402
 
 DATA = ROOT / "docs" / "findings" / "data"
 OUT = ROOT / "docs" / "leaderboard"

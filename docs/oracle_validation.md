@@ -1,6 +1,6 @@
 # Oracle validation (Gate G0)
 
-The oracle is the judge of every result Tripwire reports. If it is wrong, every number
+The oracle is the judge of every result Dyepack reports. If it is wrong, every number
 is wrong, so it is checked against a human before anything is built on it.
 
 ## Labeling rule (v2)

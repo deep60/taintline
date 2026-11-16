@@ -1,10 +1,10 @@
 from types import SimpleNamespace as NS
 
-from tripwire.attacks import load_attacks
-from tripwire.attacks.runner import run_suite
-from tripwire.sandbox import Sandbox
-from tripwire.targets.own_agent import AgentTimeout, AnthropicAgent
-from tripwire.tasks import TASKS
+from dyepack.attacks import load_attacks
+from dyepack.attacks.runner import run_suite
+from dyepack.sandbox import Sandbox
+from dyepack.targets.own_agent import AgentTimeout, AnthropicAgent
+from dyepack.tasks import TASKS
 
 
 def tool_use(name="read_file", args=None):

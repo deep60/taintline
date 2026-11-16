@@ -1,8 +1,8 @@
 import io
 import json
 
-from tripwire.demo import run_demo
-from tripwire.report.replay import suite_html, write_replay
+from dyepack.demo import run_demo
+from dyepack.report.replay import suite_html, write_replay
 
 CANARY = "sk-live-CANARYabc123"
 EVIL = "<script>alert(1)</script><img src=x onerror=alert(2)>"
@@ -50,7 +50,7 @@ def test_leaks_are_capped_and_counted():
 def test_demo_writes_a_replay(tmp_path):
     res = run_demo(str(tmp_path), stream=io.StringIO())
     page = (tmp_path / "replay.html").read_text()
-    assert "Tripwire demo replay" in page and res["scenes"][1]["canary"] in page
+    assert "Dyepack demo replay" in page and res["scenes"][1]["canary"] in page
     assert json.loads((tmp_path / "demo.json").read_text())["scenes"][0]["prompt"]
 
 

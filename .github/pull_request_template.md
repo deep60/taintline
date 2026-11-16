@@ -2,7 +2,7 @@
 
 ## Checklist
 - [ ] `uv run ruff check src tests scripts` and `uv run python -m pytest -q` pass
-- [ ] New attacks pass `tripwire attacks validate <file> --lab <lab>` (CI checks this too)
+- [ ] New attacks pass `dyepack attacks validate <file> --lab <lab>` (CI checks this too)
 - [ ] Labs only: no real companies, people, domains or credentials
 - [ ] Any network or process access goes through the scope gate
 - [ ] Any rate I quote comes with its command and run folder; errors are reported, not counted as secure

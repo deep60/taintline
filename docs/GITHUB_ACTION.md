@@ -1,11 +1,11 @@
-# Tripwire in GitHub: config audit and rug-pull monitor
+# Dyepack in GitHub: config audit and rug-pull monitor
 
 > **Status:** the commands below are tested locally. The action has **not run on GitHub yet**.
 > `.github/workflows/action-selftest.yml` will run it once this repo is pushed.
 
 ## 1. Audit MCP configs on every pull request
 
-`tripwire audit` reads MCP client configs and checks every server entry. It starts nothing and
+`dyepack audit` reads MCP client configs and checks every server entry. It starts nothing and
 needs no scope file:
 
 | finding | severity | what it means |
@@ -26,30 +26,30 @@ On your machine, with no arguments, it finds the per-user configs (Claude Deskto
 Cursor, VS Code, Windsurf) and the project files in the current folder:
 
 ```bash
-tripwire audit
-tripwire audit --no-user --sarif tripwire.sarif   # project files only, as CI does
+dyepack audit
+dyepack audit --no-user --sarif dyepack.sarif   # project files only, as CI does
 ```
 
-In a repository, copy [examples/workflows/tripwire-audit.yml](../examples/workflows/tripwire-audit.yml)
+In a repository, copy [examples/workflows/dyepack-audit.yml](../examples/workflows/dyepack-audit.yml)
 to `.github/workflows/`. Findings show up in the code scanning tab and on the pull request, **on the
 config file's own line**.
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: deep60/tripwire@main      # pin a tag or SHA once released
+- uses: deep60/dyepack@main      # pin a tag or SHA once released
   with:
     fail-on: high                 # high | medium | low | never
 ```
 
 ## 2. Watch servers for rug pulls on a schedule
 
-`tripwire monitor --config .mcp.json` starts each server in the config, lists its tools, and
+`dyepack monitor --config .mcp.json` starts each server in the config, lists its tools, and
 compares them with one pin file per server:
 
 ```bash
-tripwire monitor --config .mcp.json --pins-dir .tripwire/pins            # first run: writes baselines
-tripwire monitor --config .mcp.json --pins-dir .tripwire/pins            # later: OK / DRIFT / UNCHECKED
-tripwire monitor --config .mcp.json --pins-dir .tripwire/pins --update   # accept a change you reviewed
+dyepack monitor --config .mcp.json --pins-dir .dyepack/pins            # first run: writes baselines
+dyepack monitor --config .mcp.json --pins-dir .dyepack/pins            # later: OK / DRIFT / UNCHECKED
+dyepack monitor --config .mcp.json --pins-dir .dyepack/pins --update   # accept a change you reviewed
 ```
 
 - Every server must be listed in `SCOPE.yaml`. Monitoring **starts** stdio servers and contacts
@@ -61,8 +61,8 @@ tripwire monitor --config .mcp.json --pins-dir .tripwire/pins --update   # accep
   timeout, or a URL server that needs custom headers (not supported yet).
 - `--notify-url` sends a signed webhook on drift, as plain `monitor` does.
 
-For a daily job, use [examples/workflows/tripwire-monitor.yml](../examples/workflows/tripwire-monitor.yml).
-Commit `SCOPE.yaml` and the reviewed `.tripwire/pins/` first.
+For a daily job, use [examples/workflows/dyepack-monitor.yml](../examples/workflows/dyepack-monitor.yml).
+Commit `SCOPE.yaml` and the reviewed `.dyepack/pins/` first.
 
 ## Exit codes
 
@@ -81,9 +81,9 @@ The action exposes this as the `exit-code` output and fails the job on 1 or 3.
 | `paths` | (discover) | audit: files to check, space separated |
 | `fail-on` | `high` | audit |
 | `config` | `.mcp.json` | monitor |
-| `pins-dir` | `.tripwire/pins` | monitor |
+| `pins-dir` | `.dyepack/pins` | monitor |
 | `scope` | `SCOPE.yaml` | monitor |
-| `sarif-file` | `tripwire.sarif` | both |
+| `sarif-file` | `dyepack.sarif` | both |
 | `upload-sarif` | `true` | both (needs `security-events: write`) |
 
 ## Limits

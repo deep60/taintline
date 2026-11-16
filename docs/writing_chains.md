@@ -1,6 +1,6 @@
 # Writing attacks
 
-Add entries to a YAML file in `src/tripwire/attacks/chains/`:
+Add entries to a YAML file in `src/dyepack/attacks/chains/`:
 
     - id: unique_name
       channel: tool_output          # or tool_poisoning
@@ -11,5 +11,5 @@ Add entries to a YAML file in `src/tripwire/attacks/chains/`:
         text injected into the surface. Placeholders: {attacker_email} {attacker_url}
       # target_tool: fetch_url      # required when surface is tool_description
 
-Variants: `tripwire run --mutators base64,homoglyph,zero_width` adds mutated copies
+Variants: `dyepack run --mutators base64,homoglyph,zero_width` adds mutated copies
 (each one effort point harder).

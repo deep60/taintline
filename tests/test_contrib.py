@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from tripwire.attacks.validate import validate_file
-from tripwire.labs import GENERIC, LABS
+from dyepack.attacks.validate import validate_file
+from dyepack.labs import GENERIC, LABS
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples" / "attacks"
@@ -41,7 +41,7 @@ def test_every_starter_is_covered_and_documented():
 
 
 def test_starter_ids_do_not_collide_with_the_library():
-    from tripwire.attacks import load_attacks
+    from dyepack.attacks import load_attacks
     library = {a.id for lab in LABS.values() for a in lab.attacks()}
     for p in EXAMPLES.glob("*.yaml"):
         assert not {a.id for a in load_attacks(p)} & library, p.name

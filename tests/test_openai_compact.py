@@ -2,13 +2,13 @@ import json
 
 import pytest
 
-from tripwire.attacks import load_attacks
-from tripwire.attacks.runner import run_suite
-from tripwire.sandbox import Sandbox
-from tripwire.targets import make_agent_factory
-from tripwire.targets.openai_compat import OpenAICompatAgent, to_openai_tools
-from tripwire.targets.own_agent import AgentTimeout
-from tripwire.tasks import TASKS
+from dyepack.attacks import load_attacks
+from dyepack.attacks.runner import run_suite
+from dyepack.sandbox import Sandbox
+from dyepack.targets import make_agent_factory
+from dyepack.targets.openai_compat import OpenAICompatAgent, to_openai_tools
+from dyepack.targets.own_agent import AgentTimeout
+from dyepack.tasks import TASKS
 
 
 def final(text):

@@ -3,10 +3,10 @@
 name: action-selftest
 on:
   push:
-    paths: ["action.yml", "src/tripwire/scanner/**", "src/tripwire/report/sarif.py", "tests/fixtures/audit/**",
+    paths: ["action.yml", "src/dyepack/scanner/**", "src/dyepack/report/sarif.py", "tests/fixtures/audit/**",
             ".github/workflows/action-selftest.yml"]
   pull_request:
-    paths: ["action.yml", "src/tripwire/scanner/**", "src/tripwire/report/sarif.py", "tests/fixtures/audit/**",
+    paths: ["action.yml", "src/dyepack/scanner/**", "src/dyepack/report/sarif.py", "tests/fixtures/audit/**",
             ".github/workflows/action-selftest.yml"]
 permissions:
   contents: read
@@ -26,10 +26,10 @@ jobs:
           CODE: ${{ steps.tw.outputs.exit-code }}
         run: |
           test "$CODE" = "0"
-          rules=$(jq -r '.runs[0].results[].ruleId' tripwire.sarif | sort | uniq -c)
+          rules=$(jq -r '.runs[0].results[].ruleId' dyepack.sarif | sort | uniq -c)
           echo "$rules"
-          echo "$rules" | grep -q "1 tripwire/config/insecure_transport"
-          echo "$rules" | grep -q "1 tripwire/config/broad_filesystem"
-          echo "$rules" | grep -q "2 tripwire/config/unpinned_package"
-          jq -e '.runs[0].results[] | select(.ruleId=="tripwire/config/insecure_transport")
-                 | .locations[0].physicalLocation.region.startLine == 7' tripwire.sarif
+          echo "$rules" | grep -q "1 dyepack/config/insecure_transport"
+          echo "$rules" | grep -q "1 dyepack/config/broad_filesystem"
+          echo "$rules" | grep -q "2 dyepack/config/unpinned_package"
+          jq -e '.runs[0].results[] | select(.ruleId=="dyepack/config/insecure_transport")
+                 | .locations[0].physicalLocation.region.startLine == 7' dyepack.sarif

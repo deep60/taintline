@@ -1,11 +1,11 @@
 import json
 
-from tripwire.attacks import load_attacks
-from tripwire.attacks.runner import run_suite
-from tripwire.cli import main
-from tripwire.rescore import rescore
-from tripwire.targets import MockAgent
-from tripwire.tasks import TASKS
+from dyepack.attacks import load_attacks
+from dyepack.attacks.runner import run_suite
+from dyepack.cli import main
+from dyepack.rescore import rescore
+from dyepack.targets import MockAgent
+from dyepack.tasks import TASKS
 
 
 class ChattyAgent:

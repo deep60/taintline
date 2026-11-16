@@ -1,6 +1,6 @@
 # Writing attacks
 
-An attack is a YAML entry; no code. Check it with `tripwire attacks validate PATH` (add `--lab NAME`
+An attack is a YAML entry; no code. Check it with `dyepack attacks validate PATH` (add `--lab NAME`
 to also check tool and server names against a lab).
 
 ```yaml

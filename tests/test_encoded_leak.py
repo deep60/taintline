@@ -4,8 +4,8 @@ import urllib.parse
 
 import pytest
 
-from tripwire.oracles import canary
-from tripwire.oracles.collaborator import canaries_seen
+from dyepack.oracles import canary
+from dyepack.oracles.collaborator import canaries_seen
 
 TOKEN = "sk-live-CANARYa1b2c3d4e5f6"
 CAN = {"api_key": TOKEN}

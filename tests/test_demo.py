@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from tripwire.demo import EMAIL_RE, run_demo
+from dyepack.demo import EMAIL_RE, run_demo
 
 
 def test_demo_shows_a_clean_baseline_a_proven_leak_and_a_defended_agent(tmp_path):

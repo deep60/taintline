@@ -9,12 +9,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lab" / "collaborator"))
 
 from server import make_server  # noqa: E402
 
-from tripwire.attacks.loader import load_attacks  # noqa: E402
-from tripwire.attacks.validate import validate_file  # noqa: E402
-from tripwire.gateway.live import live_run, live_suite, live_trial, suite_markdown  # noqa: E402
-from tripwire.gateway.multi import MultiSandbox  # noqa: E402
-from tripwire.labs import LABS  # noqa: E402
-from tripwire.scope import Gate, OutOfScope, parse_scope  # noqa: E402
+from dyepack.attacks.loader import load_attacks  # noqa: E402
+from dyepack.attacks.validate import validate_file  # noqa: E402
+from dyepack.gateway.live import live_run, live_suite, live_trial, suite_markdown  # noqa: E402
+from dyepack.gateway.multi import MultiSandbox  # noqa: E402
+from dyepack.labs import LABS  # noqa: E402
+from dyepack.scope import Gate, OutOfScope, parse_scope  # noqa: E402
 
 
 def _gate(*servers):
@@ -46,7 +46,7 @@ def test_every_lab_attack_file_validates(name):
     if lab.attack_file:
         assert validate_file(lab.attack_file) == []
     else:
-        from tripwire.labs import GENERIC
+        from dyepack.labs import GENERIC
         assert validate_file(GENERIC, lab.subs(), {lab.inject_tool}, set(lab.servers)) == []
 
 
@@ -80,7 +80,7 @@ def test_validator_catches_authoring_mistakes(tmp_path):
 
 
 def test_delayed_and_split_payloads_in_the_proxy(tmp_path):
-    from tripwire.gateway.mcp_sandbox import MCPSandbox
+    from dyepack.gateway.mcp_sandbox import MCPSandbox
     server = str(Path(__file__).parent.parent / "lab" / "servers" / "notes_server.py")
     inj = {"surface": "tool_result", "target_tool": "read_note", "payload": "DELAYED", "after": 1}
     with MCPSandbox(_gate("notes"), "notes", sys.executable, [server], {}, None, inj,
@@ -109,7 +109,7 @@ def test_multisandbox_routes_across_servers_and_gates_all(tmp_path):
 
 
 def test_later_server_shadows_an_earlier_tool():
-    from tripwire.gateway.multi import ServerSpec
+    from dyepack.gateway.multi import ServerSpec
     inbox = LABS["inbox"].specs()[0]
     notes = LABS["notes"].specs()[0]                         # also exposes send_email
     with MultiSandbox(_gate("inbox", "notes"), [inbox, ServerSpec("notes", notes.command, notes.args)]) as sb:

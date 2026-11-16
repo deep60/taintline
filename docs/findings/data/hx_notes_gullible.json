@@ -6,7 +6,7 @@
   "temperature": 0.6,
   "seed_fixed": true
  },
- "command": "tripwire live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model qwen3.8-9b-heretic-uncensored --lab notes -n 10 --gullible --out out/hx_notes_gullible",
+ "command": "dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model qwen3.8-9b-heretic-uncensored --lab notes -n 10 --gullible --out out/hx_notes_gullible",
  "summary": {
   "headline": 6.5,
   "baseline_utility": 1.0,

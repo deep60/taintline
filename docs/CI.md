@@ -1,4 +1,4 @@
-# Using tripwire in CI
+# Using dyepack in CI
 
 ## Exit codes
 | command | 0 | 1 | 3 |
@@ -21,7 +21,7 @@ An invalid run never passes: exit 3 means "this result is not evidence", not "se
 Ollama); a target that reports none counts as 0 tokens, so use `--max-minutes` as well.
 
 ## SARIF
-`--sarif PATH` on `enumerate`, `monitor` and `live-suite`, or `tripwire sarif --scan/--drift/--live --out`.
+`--sarif PATH` on `enumerate`, `monitor` and `live-suite`, or `dyepack sarif --scan/--drift/--live --out`.
 Results anchor to `--artifact` (default `mcp-config.json`) because MCP findings live on a server's tool, not
 in a source file; the real subject is in `logicalLocations`. Each result has a stable fingerprint.
 Evidence strength maps to level: canary delivered = error; attacker contacted = warning; secret read = note.
@@ -29,8 +29,8 @@ Evidence strength maps to level: canary delivered = error; attacker contacted = 
 Untested sketch for GitHub code scanning (SARIF is checked structurally by `validate_sarif`, but has not been
 uploaded to GitHub by us):
 ```yaml
-- run: uv run tripwire monitor --url http://127.0.0.1:8000/mcp --pins pins.json --sarif tripwire.sarif
+- run: uv run dyepack monitor --url http://127.0.0.1:8000/mcp --pins pins.json --sarif dyepack.sarif
 - uses: github/codeql-action/upload-sarif@v3
-  with: { sarif_file: tripwire.sarif }
+  with: { sarif_file: dyepack.sarif }
   if: always()
 ```
