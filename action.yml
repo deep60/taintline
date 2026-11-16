@@ -1,0 +1,98 @@
+# Tripwire GitHub Action. UNTESTED ON GITHUB: the commands it runs are tested locally, but this
+# file has not run in a GitHub workflow yet. Check the pinned action versions before relying on it.
+name: Tripwire MCP check
+description: >-
+  Audit MCP client configs in a repository (secrets, plain http, unpinned server packages, broad
+  filesystem access), or watch MCP servers for rug-pulls against pinned tool definitions.
+  Findings go to GitHub code scanning as SARIF, on the config file's own line.
+author: deep60
+branding:
+  icon: shield
+  color: orange
+
+inputs:
+  command:
+    description: "`audit` (static, starts nothing) or `monitor` (lists every server's tools; needs SCOPE.yaml)."
+    default: audit
+  paths:
+    description: "audit: config files to check, space separated. Empty = look for .mcp.json, .cursor/mcp.json, .vscode/mcp.json, mcp.json."
+    default: ""
+  fail-on:
+    description: "audit: fail on findings at least this severe: high, medium, low or never."
+    default: high
+  config:
+    description: "monitor: the MCP client config whose servers are checked."
+    default: .mcp.json
+  pins-dir:
+    description: "monitor: folder of pin files, one per server. Commit it after the first run."
+    default: .tripwire/pins
+  scope:
+    description: "monitor: scope file authorizing every server in the config."
+    default: SCOPE.yaml
+  sarif-file:
+    description: "Where to write SARIF."
+    default: tripwire.sarif
+  upload-sarif:
+    description: "Upload the SARIF to code scanning (needs `security-events: write`)."
+    default: "true"
+
+outputs:
+  exit-code:
+    description: "0 clean; 1 findings at or above fail-on (audit) or drift (monitor); 3 something could not be checked."
+    value: ${{ steps.run.outputs.exit-code }}
+  sarif-file:
+    description: "Path of the SARIF file."
+    value: ${{ inputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v5
+    - name: Install tripwire from this action's source
+      shell: bash
+      run: uv tool install --python 3.12 "$GITHUB_ACTION_PATH"
+    - name: Run tripwire
+      id: run
+      shell: bash
+      # inputs arrive as env vars, never pasted into the script, so a crafted input cannot inject shell
+      env:
+        TW_COMMAND: ${{ inputs.command }}
+        TW_PATHS: ${{ inputs.paths }}
+        TW_FAIL_ON: ${{ inputs.fail-on }}
+        TW_CONFIG: ${{ inputs.config }}
+        TW_PINS: ${{ inputs.pins-dir }}
+        TW_SCOPE: ${{ inputs.scope }}
+        TW_SARIF: ${{ inputs.sarif-file }}
+      run: |
+        set +e
+        case "$TW_COMMAND" in
+          audit)
+            read -r -a paths <<< "$TW_PATHS"
+            tripwire audit "${paths[@]}" --no-user --fail-on "$TW_FAIL_ON" --sarif "$TW_SARIF"
+            ;;
+          monitor)
+            tripwire monitor --config "$TW_CONFIG" --pins-dir "$TW_PINS" --scope "$TW_SCOPE" --sarif "$TW_SARIF"
+            ;;
+          *)
+            echo "::error::command must be audit or monitor, got '$TW_COMMAND'"; exit 2 ;;
+        esac
+        code=$?
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        exit 0
+    - name: Upload SARIF
+      if: ${{ always() && inputs.upload-sarif == 'true' && hashFiles(inputs.sarif-file) != '' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: tripwire-${{ inputs.command }}
+    - name: Set result
+      shell: bash
+      env:
+        CODE: ${{ steps.run.outputs.exit-code }}
+      run: |
+        case "$CODE" in
+          0) echo "tripwire: clean" ;;
+          1) echo "::error::tripwire found problems (see the log above and the code scanning tab)"; exit 1 ;;
+          3) echo "::error::tripwire could not check everything; unchecked is not a pass"; exit 1 ;;
+          *) echo "::error::tripwire exited $CODE"; exit 1 ;;
+        esac

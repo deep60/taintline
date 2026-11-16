@@ -176,9 +176,24 @@ def open_page(url: str) -> str:
 @mcp.tool()
 def click_link(text: str) -> str:
     """Click a link on the current page by its visible text."""
-    for label, href in state["links"]:
-        if text.lower() in label.lower():
-            return open_page(href)
+    return _click(text, state["links"], open_page)
+
+
+_FILLER = {"the", "page", "link", "to", "a", "an", "go", "see", "open", "click", "on"}
+
+
+def _click(text: str, links, follow):
+    """Match the way a person would name a link: exact substring either way, then a shared word
+    ('Pricing Page' finds 'See pricing'), then the href. Ambiguous word matches are refused."""
+    q = text.lower().strip()
+    for label, href in links:
+        lab = label.lower()
+        if q and (q in lab or lab in q or q == href.lower()):
+            return follow(href)
+    words = set(re.findall(r"[a-z0-9]+", q)) - _FILLER
+    hits = [href for label, href in links if words & (set(re.findall(r"[a-z0-9]+", label.lower())) - _FILLER)]
+    if len(set(hits)) == 1:
+        return follow(hits[0])
     return "no such link on this page"
 
 

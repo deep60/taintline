@@ -46,6 +46,37 @@ def _write_sarif(findings, path: str, artifact: str) -> None:
     print(f"sarif: {len(doc['runs'][0]['results'])} result(s) -> {path}", file=sys.stderr)
 
 
+def _write_ocsf(findings, path: str) -> None:
+    from .report.ocsf import to_ocsf, validate_ocsf, write_ocsf
+    events = to_ocsf(findings)
+    problems = validate_ocsf(events)
+    if problems:
+        raise SystemExit("internal error: OCSF output is malformed: " + "; ".join(problems))
+    write_ocsf(events, path)
+    print(f"ocsf: {len(events)} event(s) -> {path}", file=sys.stderr)
+
+
+def _notify(gate, a, findings, source: str) -> None:
+    """Signed webhook when the findings warrant one; a delivery failure never changes the exit code."""
+    if not a.notify_url:
+        return
+    from .notify import NotifyError, build_event, classify, send
+    kind = classify(findings)
+    if kind is None:
+        print("notify: nothing to report", file=sys.stderr)
+        return
+    try:
+        r = send(gate, a.notify_url, build_event(kind, findings, source), a.notify_secret_env,
+                 dry_run=a.notify_dry_run)
+    except OutOfScope as e:
+        raise SystemExit(f"refused: {e}")
+    except NotifyError as e:
+        print(f"WARNING: notify failed: {e}", file=sys.stderr)
+        return
+    print(f"notify: {kind} -> {'dry run, not sent' if r['dry_run'] else 'HTTP ' + str(r['status'])}",
+          file=sys.stderr)
+
+
 def _list_tools(gate, a) -> list[dict]:
     """tools/list from a stdio server (--server/--command) or a Streamable HTTP one (--url)."""
     if a.url:
@@ -98,6 +129,7 @@ def main(argv=None):
     en.add_argument("--timeout", type=float, default=30.0)
     en.add_argument("--sarif", help="also write SARIF 2.1.0 findings to this path")
     en.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
+    en.add_argument("--ocsf", help="also write OCSF 1.1 Detection Finding events here (.json or .ndjson)")
     en.add_argument("--json", action="store_true", help="print only the tool list (feed it to `pin`/`diff`)")
 
     mo = sub.add_parser("monitor", help="re-enumerate a live server and alert if any tool changed since pinned")
@@ -110,8 +142,25 @@ def main(argv=None):
     mo.add_argument("--timeout", type=float, default=30.0)
     mo.add_argument("--sarif", help="also write SARIF 2.1.0 findings to this path")
     mo.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
+    mo.add_argument("--ocsf", help="also write OCSF 1.1 Detection Finding events here (.json or .ndjson)")
+    mo.add_argument("--notify-url", help="POST a signed webhook here on drift, leak or invalid run")
+    mo.add_argument("--notify-secret-env", default="TRIPWIRE_WEBHOOK_SECRET",
+                    help="name of the env var holding the HMAC signing secret")
+    mo.add_argument("--notify-dry-run", action="store_true", help="build and sign, do not send")
     mo.add_argument("--pins", default="pins.json", help="pin file; created as the baseline if missing")
     mo.add_argument("--update", action="store_true", help="accept the current tools as the new baseline")
+    mo.add_argument("--config", help="check EVERY server in this MCP client config (pins go to --pins-dir)")
+    mo.add_argument("--pins-dir", default="pins", help="with --config: one pin file per server")
+
+    au = sub.add_parser("audit", help="find MCP client configs and check them (secrets, http, unpinned "
+                                      "packages, broad filesystem access); starts nothing")
+    au.add_argument("paths", nargs="*", help="config files to check (default: discover them)")
+    au.add_argument("--project", default=".", help="project folder to look in for .mcp.json, .vscode/mcp.json ...")
+    au.add_argument("--no-user", action="store_true", help="skip per-user configs (Claude Desktop, Cursor ...)")
+    au.add_argument("--fail-on", choices=["high", "medium", "low", "never"], default="high",
+                    help="exit 1 when a finding is at least this severe (default: high)")
+    au.add_argument("--sarif", help="also write SARIF 2.1.0, located at each config file and line")
+    au.add_argument("--json", action="store_true", help="print JSON instead of text")
 
     lv = sub.add_parser("live-run", help="agent vs a REAL stdio MCP server via the proxy; sink proves the leak")
     lv.add_argument("--server", required=True)
@@ -171,6 +220,11 @@ def main(argv=None):
     ls2.add_argument("--dry-run", action="store_true", help="print the plan (pairs, trials) and exit; no calls")
     ls2.add_argument("--sarif", help="also write SARIF 2.1.0 findings to this path")
     ls2.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
+    ls2.add_argument("--ocsf", help="also write OCSF 1.1 Detection Finding events here (.json or .ndjson)")
+    ls2.add_argument("--notify-url", help="POST a signed webhook here on drift, leak or invalid run")
+    ls2.add_argument("--notify-secret-env", default="TRIPWIRE_WEBHOOK_SECRET",
+                    help="name of the env var holding the HMAC signing secret")
+    ls2.add_argument("--notify-dry-run", action="store_true", help="build and sign, do not send")
 
     sa = sub.add_parser("sarif", help="turn saved scan / drift / live-suite JSON into one SARIF 2.1.0 file")
     sa.add_argument("--server", default="", help="name for --scan/--drift findings")
@@ -180,11 +234,19 @@ def main(argv=None):
     sa.add_argument("--artifact", default="mcp-config.json")
     sa.add_argument("--out", required=True)
 
+    oc = sub.add_parser("ocsf", help="turn saved scan / drift / live-suite JSON into OCSF Detection Finding events")
+    oc.add_argument("--server", default="", help="name for --scan/--drift findings")
+    oc.add_argument("--scan")
+    oc.add_argument("--drift")
+    oc.add_argument("--live")
+    oc.add_argument("--out", required=True)
+
     sub.add_parser("labs", help="list the bundled labs (servers, tasks, attacks)")
     at = sub.add_parser("attacks", help="attack library tools")
     at.add_argument("action", choices=["validate"])
     at.add_argument("path", nargs="?", help="YAML file or directory (default: the lab's attacks)")
     at.add_argument("--lab", help="check placeholders and tool names against this lab")
+    at.add_argument("--show", action="store_true", help="print each attack as the lab will plant it")
 
     px = sub.add_parser("proxy", help="recording stdio proxy for any MCP client (use after `--`: the server command)")
     px.add_argument("--server", required=True)
@@ -212,7 +274,38 @@ def main(argv=None):
     rs.add_argument("results", help="a results.json from an earlier run")
     rs.add_argument("--out", default="out/rescored")
 
+    dm = sub.add_parser("demo", help="watch a prompt-injection leak happen and get proven at a sink (1 minute)")
+    dm.add_argument("--out", default="out/demo")
+    dm.add_argument("--agent", choices=[k for k in AGENT_KINDS if not k.startswith("mock")],
+                    help="put a real model in the attack scene (default: scripted agents, no model)")
+    dm.add_argument("--model")
+    dm.add_argument("--base-url")
+    dm.add_argument("--system", help="system prompt for the real model")
+    dm.add_argument("--scope", default="SCOPE.yaml", help="needed only with --agent: must list the model host")
+
+    rp = sub.add_parser("replay", help="build a step-by-step HTML replay from a demo.json or live-suite results.json")
+    rp.add_argument("results")
+    rp.add_argument("--out", help="output .html (default: replay.html next to the results file)")
+
     a = ap.parse_args(argv)
+
+    if a.cmd == "replay":
+        from .report.replay import write_replay
+        src = Path(a.results)
+        data = json.loads(src.read_text())
+        if data.get("kind") != "demo":
+            data = load_results(str(src))
+        page = write_replay(data, a.out or src.with_name("replay.html"))
+        print(f"replay: {page}")
+        return
+
+    if a.cmd == "demo":
+        from .demo import run_demo
+        try:
+            res = run_demo(a.out, a.agent, a.model, a.base_url, a.scope, a.system)
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        raise SystemExit(2 if res["summary"]["errors"] or res["summary"]["baseline_false_alarm"] else 0)
 
     if a.cmd == "scan":
         res = scan_manifest(json.loads(Path(a.manifest).read_text()))
@@ -250,7 +343,50 @@ def main(argv=None):
         if a.sarif:
             from .report.sarif import from_scan
             _write_sarif(from_scan(a.url or a.server, res), a.sarif, a.artifact)
+        if a.ocsf:
+            from .report.sarif import from_scan
+            _write_ocsf(from_scan(a.url or a.server, res), a.ocsf)
         raise SystemExit(1 if any(f["severity"] == "high" for f in res["findings"]) else 0)
+
+    if a.cmd == "audit":
+        from .scanner.config_audit import SEVERITY_ORDER, audit, format_audit, worst
+        res = audit(a.paths or None, project=a.project, user=not (a.no_user or a.paths))
+        print(json.dumps(res, indent=2) if a.json else format_audit(res))
+        if a.sarif:
+            from .report.sarif import from_audit
+            _write_sarif(from_audit(res), a.sarif, "mcp-config.json")
+        bad = [f["file"] for f in res["files"] if f["error"]]
+        if bad:
+            print(f"WARNING: could not parse {len(bad)} file(s): {', '.join(bad)}", file=sys.stderr)
+        limit = SEVERITY_ORDER.get(a.fail_on, 99)
+        raise SystemExit(1 if worst(res) >= limit else 3 if bad else 0)
+
+    if a.cmd == "monitor" and a.config:
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        from .report.sarif import Finding, from_drift
+        from .scanner.monitor_config import exit_code, monitor_config
+        try:
+            gate = Gate(load_scope(a.scope))
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+        res = monitor_config(gate, a.config, a.pins_dir, a.timeout, a.update)
+        for s in res["servers"]:
+            print(f"{s['status'].upper():<10} {s['server']}: {s['detail']}")
+            for c in (s["report"] or {}).get("changes", []):
+                print(f"           {c['change']}: {c['tool']}" + (f" ({', '.join(c['fields'])})" if c.get("fields") else ""))
+        found = [f for s in res["servers"] if s["report"] for f in from_drift(s["server"], s["report"])]
+        found += [Finding("monitor/unchecked", "error", f"server '{s['server']}' was not checked: {s['detail']}",
+                          s["server"]) for s in res["servers"] if s["status"] == "unchecked"]
+        if a.sarif:
+            _write_sarif(found, a.sarif, a.config)
+        if a.ocsf:
+            _write_ocsf(found, a.ocsf)
+        _notify(gate, a, found, a.config)
+        code = exit_code(res)
+        if code == 3:
+            print("UNCHECKED: at least one server could not be checked; that is not a pass.", file=sys.stderr)
+        raise SystemExit(code)
 
     if a.cmd == "monitor":
         if not Path(a.scope).exists():
@@ -276,6 +412,12 @@ def main(argv=None):
         if a.sarif:
             from .report.sarif import from_drift
             _write_sarif(from_drift(a.url or a.server, report), a.sarif, a.artifact)
+        if a.ocsf or a.notify_url:
+            from .report.sarif import from_drift
+            found = from_drift(a.url or a.server, report)
+            if a.ocsf:
+                _write_ocsf(found, a.ocsf)
+            _notify(Gate(load_scope(a.scope)), a, found, a.url or a.server)
         if report["changes"]:
             kinds: dict = {}
             for c in report["changes"]:
@@ -301,6 +443,20 @@ def main(argv=None):
         _write_sarif(found, a.out, a.artifact)
         return
 
+    if a.cmd == "ocsf":
+        from .report.sarif import from_drift, from_live, from_scan
+        found = []
+        if a.scan:
+            found += from_scan(a.server, json.loads(Path(a.scan).read_text()))
+        if a.drift:
+            found += from_drift(a.server, json.loads(Path(a.drift).read_text()))
+        if a.live:
+            found += from_live(load_results(a.live))
+        if not (a.scan or a.drift or a.live):
+            raise SystemExit("give at least one of --scan, --drift, --live")
+        _write_ocsf(found, a.out)
+        return
+
     if a.cmd == "labs":
         from .labs import LABS
         for lab in LABS.values():
@@ -320,6 +476,14 @@ def main(argv=None):
         tools = {lab.inject_tool} if lab and lab.inject_tool else None
         servers = set(lab.servers) if lab else None
         problems = validate_file(path, subs, tools, servers)
+        if a.show and not problems:
+            files = sorted(Path(path).glob("*.yaml")) if Path(path).is_dir() else [Path(path)]
+            for f in files:
+                for atk in load_attacks(f, subs):
+                    where = atk.target_tool or (atk.env or {}).get("PAGE_VECTOR") or atk.surface
+                    print(f"--- {atk.id}  [{atk.surface} -> {where}{' on ' + atk.server if atk.server else ''}, "
+                          f"effort {atk.effort}, family {atk.family}]")
+                    print("\n".join(atk.parts) if atk.parts else atk.payload.rstrip())
         for m in problems:
             print("PROBLEM:", m)
         print(f"{path}: {'OK' if not problems else str(len(problems)) + ' problem(s)'}")
@@ -357,6 +521,8 @@ def main(argv=None):
         res = stamp(res, "live_suite")
         Path(a.out, "results.json").write_text(json.dumps(res, indent=2))
         Path(a.out, "report.md").write_text(suite_markdown(res))
+        from .report.replay import write_replay
+        write_replay(res, Path(a.out, "replay.html"))
         if a.sarif:
             from .report.sarif import from_live
             _write_sarif(from_live(res), a.sarif, a.artifact)
@@ -414,15 +580,24 @@ def main(argv=None):
         res = stamp(res, "live_suite")
         Path(a.out, "results.json").write_text(json.dumps(res, indent=2))
         Path(a.out, "report.md").write_text(suite_markdown(res))
+        from .report.replay import write_replay
+        write_replay(res, Path(a.out, "replay.html"))
         if a.sarif:
             from .report.sarif import from_live
             _write_sarif(from_live(res), a.sarif, a.artifact)
+        if a.ocsf or a.notify_url:
+            from .report.sarif import from_live
+            found = from_live(res)
+            if a.ocsf:
+                _write_ocsf(found, a.ocsf)
+            _notify(gate, a, found, res.get("lab") or res.get("server", ""))
         o = res["overall"]
         print(f"live suite: exposure={res['summary']['headline']}/100  utility={res['summary']['baseline_utility']:.0%}  "
               f"false_alarm={res['summary']['baseline_false_alarm']:.0%}")
         print(f"live suite: {len(res['pairs'])} pairs x n={a.n}  delivered={o['delivered']}/{o['trials']} "
               f"({o['asr']:.0%}, CI {o['ci'][0]:.0%}-{o['ci'][1]:.0%})  errors={o['errors']}  "
-              f"disagreements={o['disagreements']}  report={Path(a.out, 'report.md')}")
+              f"disagreements={o['disagreements']}  report={Path(a.out, 'report.md')}  "
+              f"replay={Path(a.out, 'replay.html')}")
         if o["errors"]:
             print(f"WARNING: {o['errors']} trial(s) errored; errors are NOT counted as secure.")
         sm = res["summary"]

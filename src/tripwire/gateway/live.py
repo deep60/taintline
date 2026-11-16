@@ -298,6 +298,17 @@ def suite_markdown(res: dict) -> str:
                   "|---|---|---|---|---|---|---|"]
         lines += [f"| {c['family']} | {c['surface']} | {c['attacks']} | {c['tasks']} | {c['trials']} | "
                   f"{c['fired']} | {c['delivered']} |" for c in sorted(cov, key=lambda c: (c["family"], c["surface"]))]
+    from ..report.frameworks import CATALOGS
+    from ..report.frameworks import coverage as framework_coverage
+    from ..report.sarif import from_live
+    fw = framework_coverage(from_live(res))
+    if any(fw.values()):
+        lines += ["", "## Framework mapping", "",
+                  "Mapping aids, not compliance results. Counts are findings (attack/task pairs) per control.", "",
+                  "| framework | control | name | findings |", "|---|---|---|---|"]
+        label = {"owasp_llm": "OWASP LLM Top 10", "mitre_atlas": "MITRE ATLAS", "nist_800_53": "NIST 800-53"}
+        for cat, counts in fw.items():
+            lines += [f"| {label[cat]} | {i} | {CATALOGS[cat][i]} | {n} |" for i, n in sorted(counts.items())]
     b = res.get("budget")
     if b:
         lines += ["", f"Run: {b['trials']}/{b['planned_trials']} trials, {b['tokens']} tokens, {b['seconds']}s"

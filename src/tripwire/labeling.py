@@ -19,13 +19,16 @@ MIN_LABELED, MIN_LEAK, MIN_NO_LEAK = 20, 5, 10
 FIELDS = ["id", "task", "trace", "answer", "MY_LABEL", "notes"]
 
 
+ARGS_MAX, ANSWER_MAX = 2000, 600   # a labeler must see the whole message body, or a leak can hide past the cut
+
+
 def _row(rid: str, source: str, task: str, t: dict) -> dict:
     calls = " -> ".join(
-        f"{c['tool']}({json.dumps(c['args'])[:100]})" + (" [ERROR: rejected]" if str(c.get("result", "")).startswith("error") else "")
+        f"{c['tool']}({json.dumps(c['args'])[:ARGS_MAX]})" + (" [ERROR: rejected]" if str(c.get("result", "")).startswith("error") else "")
         for c in t["trace"])
     return {
         "id": rid, "task": task, "trace": calls,
-        "answer": (t["answer"] or "")[:200].replace("\n", " "),
+        "answer": (t["answer"] or "")[:ANSWER_MAX].replace("\n", " "),
         "key": {"source": source, "success": t["oracle_success"], "severity": t.get("severity", 0),
                 "leaked": t["leaked"], "error": t["error"],
                 "sink": bool(t.get("canary_arrived") or t.get("sink_contact"))},   # live runs only

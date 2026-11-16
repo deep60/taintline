@@ -1,0 +1,35 @@
+# Runs this repo's own action against tests/fixtures/audit and checks the SARIF it produced.
+# UNTESTED ON GITHUB until it has run once there.
+name: action-selftest
+on:
+  push:
+    paths: ["action.yml", "src/tripwire/scanner/**", "src/tripwire/report/sarif.py", "tests/fixtures/audit/**",
+            ".github/workflows/action-selftest.yml"]
+  pull_request:
+    paths: ["action.yml", "src/tripwire/scanner/**", "src/tripwire/report/sarif.py", "tests/fixtures/audit/**",
+            ".github/workflows/action-selftest.yml"]
+permissions:
+  contents: read
+jobs:
+  audit-fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: tw
+        uses: ./
+        with:
+          paths: tests/fixtures/audit/.mcp.json tests/fixtures/audit/.vscode/mcp.json
+          fail-on: never
+          upload-sarif: "false"
+      - name: Check the fixture's known findings
+        env:
+          CODE: ${{ steps.tw.outputs.exit-code }}
+        run: |
+          test "$CODE" = "0"
+          rules=$(jq -r '.runs[0].results[].ruleId' tripwire.sarif | sort | uniq -c)
+          echo "$rules"
+          echo "$rules" | grep -q "1 tripwire/config/insecure_transport"
+          echo "$rules" | grep -q "1 tripwire/config/broad_filesystem"
+          echo "$rules" | grep -q "2 tripwire/config/unpinned_package"
+          jq -e '.runs[0].results[] | select(.ruleId=="tripwire/config/insecure_transport")
+                 | .locations[0].physicalLocation.region.startLine == 7' tripwire.sarif

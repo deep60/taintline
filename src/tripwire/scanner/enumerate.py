@@ -19,14 +19,14 @@ def inventory(tools: list[dict]) -> list[dict]:
 
 
 def enumerate_server(gate, server_name: str, command: str, args: list[str] | None = None,
-                     timeout: float = 30.0) -> list[dict]:
+                     timeout: float = 30.0, env: dict[str, str] | None = None) -> list[dict]:
     """Live tools/list over stdio. Raises OutOfScope before any process is started."""
     import asyncio
 
     from ..gateway.client import connect
 
     async def go():
-        async with connect(gate, server_name, command, args) as session:
+        async with connect(gate, server_name, command, args, env) as session:
             res = await session.list_tools()
             return [t.model_dump(by_alias=True, exclude_none=True) for t in res.tools]
 

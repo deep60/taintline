@@ -1,0 +1,12 @@
+# `docker compose run --rm demo` runs the demo with no network, a read-only filesystem and no
+# capabilities; results land in ./out/demo on your machine.
+services:
+  demo:
+    build: .
+    image: tripwire:latest      # same name as `docker build -t tripwire .`, so there is one image, not two
+    network_mode: none
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["./out:/app/out"]

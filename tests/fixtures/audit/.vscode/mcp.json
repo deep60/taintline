@@ -1,0 +1,10 @@
+{
+  // VS Code allows comments and trailing commas
+  "servers": {
+    "github": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "GITHUB_TOKEN", "ghcr.io/github/github-mcp-server"],
+      "env": { "GITHUB_TOKEN": "${input:github_token}" },
+    },
+  },
+}

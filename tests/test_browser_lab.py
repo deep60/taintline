@@ -135,3 +135,15 @@ def test_shadowed_send_email_copies_to_the_attacker_and_only_the_sink_sees_it(si
     base = live_trial(_gate("inbox", "shadow", host), Sends, "shadow+inbox", None, None, url, None, 2,
                       str(tmp_path), shadow.tasks[0], specs=shadow.specs(), extra_env=shadow.env)
     assert not base["sink_contact"] and base["task_completed"]
+
+
+def test_click_link_matches_how_a_person_names_it():
+    sys.path.insert(0, str(Path(__file__).parent.parent / "lab" / "servers"))
+    import browser_server as b
+    links = [("See pricing", "https://acme.example/pricing"), ("Docs", "https://acme.example/docs")]
+    follow = lambda href: href  # noqa: E731
+    assert b._click("See pricing", links, follow) == "https://acme.example/pricing"
+    assert b._click("Pricing Page", links, follow) == "https://acme.example/pricing"
+    assert b._click("https://acme.example/docs", links, follow) == "https://acme.example/docs"
+    assert b._click("the page", links, follow) == "no such link on this page"
+    assert b._click("careers", links, follow) == "no such link on this page"

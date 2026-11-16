@@ -15,9 +15,10 @@ from ..scope import Gate
 
 
 @asynccontextmanager
-async def connect(gate: Gate, server_name: str, command: str, args: list[str] | None = None):
+async def connect(gate: Gate, server_name: str, command: str, args: list[str] | None = None,
+                  env: dict[str, str] | None = None):
     gate.check_server(server_name)
-    params = StdioServerParameters(command=command, args=list(args or []))
+    params = StdioServerParameters(command=command, args=list(args or []), env=env or None)
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()

@@ -16,6 +16,8 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 
+from .frameworks import flat, tags_for
+
 SARIF_VERSION = "2.1.0"
 SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
 LEVELS = {"none", "note", "warning", "error"}
@@ -35,6 +37,22 @@ RULE_TEXT = {
                                  "outbound tool toward the attacker's address; no canary was proven delivered."),
     "dynamic/secret_read": ("Agent read a secret it was steered toward", "An injection made the agent read "
                             "the canary secret, but nothing left the system."),
+    "config/secret_in_config": ("Secret pasted into an MCP client config", "A token-shaped value sits in a "
+                                "server's args, env, headers or URL. Anyone who can read the file has it."),
+    "config/insecure_transport": ("Remote MCP server over plain http", "Requests, tokens and tool results "
+                                  "cross the network unencrypted."),
+    "config/credential_in_config": ("Credential env var holds a literal value", "An env var named like a "
+                                    "credential is set to a literal value instead of a reference."),
+    "config/unpinned_package": ("MCP server package has no fixed version", "The server is fetched by a package "
+                                "runner without a pinned version, so each launch can load new, unreviewed tool code."),
+    "config/broad_filesystem": ("MCP server can reach the whole disk or home folder", "The server is given / or "
+                                "the home folder as a path; an injected instruction can read anything there."),
+    "config/mutable_image_tag": ("Container image pinned by tag, not digest", "A tag can be moved to a "
+                                 "different image; a digest cannot."),
+    "config/auto_approved_tools": ("Tools run without user approval", "The client is set to run these tools "
+                                   "without asking the user first."),
+    "monitor/unchecked": ("MCP server could not be checked for drift", "Monitoring could not list this "
+                          "server's tools (scope, missing env var, timeout). Unchecked is not a pass."),
     "run/invalid": ("Run is not usable as evidence", "The run had errors, an incomplete baseline or was "
                     "stopped early; its score must not be read as a pass."),
 }
@@ -49,6 +67,8 @@ class Finding:
     tool: str = ""
     key: str = ""              # extra text mixed into the fingerprint
     props: dict = field(default_factory=dict)
+    uri: str = ""              # real file, when known (config audit); else the `artifact` default
+    line: int = 1
 
 
 # -- sources -------------------------------------------------------------------------------------
@@ -77,6 +97,14 @@ def from_drift(server: str, report: dict) -> list[Finding]:
                            key=",".join(fields or []), props={"fields": fields or []}))
     out += from_scan(server, {"findings": report.get("findings", [])})
     return out
+
+
+def from_audit(res: dict) -> list[Finding]:
+    """Config-audit findings carry their own file and line, so code scanning can annotate the config."""
+    return [Finding(f"config/{f['kind']}", SEVERITY_LEVEL.get(f["severity"], "warning"),
+                    f"{f['message']} [{f['server']}]. Fix: {f['fix']}", f["server"], "",
+                    key=f"{f['file']}|{f['message']}", props={"client": f["client"]},
+                    uri=f["file"], line=f["line"]) for f in res.get("findings", [])]
 
 
 def from_live(res: dict) -> list[Finding]:
@@ -127,15 +155,16 @@ def to_sarif(findings: list[Finding], artifact: str = "mcp-config.json", version
         level = next(f.level for f in findings if f.rule == r)
         rules.append({"id": f"tripwire/{r}", "name": r.replace("/", "_"), "shortDescription": {"text": short},
                       "fullDescription": {"text": full}, "defaultConfiguration": {"level": level},
-                      "properties": {"tags": ["security", "mcp", "prompt-injection"],
+                      "properties": {"tags": ["security", "mcp", "prompt-injection", *flat(r)],
+                                     "frameworks": tags_for(r),
                                      "security-severity": SECURITY_SEVERITY.get(level, "5.0")}})
     results = []
     for f in findings:
         subject = "/".join(x for x in (f.server, f.tool) if x) or "run"
         res = {"ruleId": f"tripwire/{f.rule}", "ruleIndex": index[f.rule], "level": f.level,
                "message": {"text": f.message},
-               "locations": [{"physicalLocation": {"artifactLocation": {"uri": artifact},
-                                                   "region": {"startLine": 1}},
+               "locations": [{"physicalLocation": {"artifactLocation": {"uri": f.uri or artifact},
+                                                   "region": {"startLine": max(1, f.line)}},
                               "logicalLocations": [{"name": f.tool or f.server or "run",
                                                     "fullyQualifiedName": subject, "kind": "function"}]}],
                "partialFingerprints": {"tripwire/v1": fingerprint(f)}}

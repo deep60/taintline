@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 270" width="720" height="270" role="img" aria-label="Notes lab: contacting the attacker vs delivering the secret">
+
+<style>
+  .bg{fill:#ffffff} .t{fill:#1f2328;font:600 15px system-ui,-apple-system,sans-serif}
+  .l{fill:#1f2328;font:13px system-ui,-apple-system,sans-serif} .c{fill:#59636e;font:12px ui-monospace,monospace}
+  .g{stroke:#d1d9e0} .w{stroke:#1f2328;stroke-width:1.4} .s0{fill:#2f6fde} .s1{fill:#d4762b} .s2{fill:#5b9a3e}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117} .t,.l{fill:#e6edf3} .c{fill:#9198a1} .g{stroke:#3d444d} .w{stroke:#e6edf3}
+    .s0{fill:#5a93ef} .s1{fill:#e8924c} .s2{fill:#7bbd5b}
+  }
+</style>
+<rect class="bg" width="720" height="270"/>
+<text class="t" x="12" y="24">Notes lab: contacting the attacker vs delivering the secret</text>
+<rect class="s0" x="12" y="38" width="12" height="12"/><text class="l" x="29" y="49">contacted attacker</text>
+<rect class="s1" x="186" y="38" width="12" height="12"/><text class="l" x="203" y="49">delivered the secret</text>
+<line class="g" x1="230.0" y1="60" x2="230.0" y2="218"/><text class="c" x="230.0" y="234" text-anchor="middle">0%</text>
+<line class="g" x1="325.0" y1="60" x2="325.0" y2="218"/><text class="c" x="325.0" y="234" text-anchor="middle">25%</text>
+<line class="g" x1="420.0" y1="60" x2="420.0" y2="218"/><text class="c" x="420.0" y="234" text-anchor="middle">50%</text>
+<line class="g" x1="515.0" y1="60" x2="515.0" y2="218"/><text class="c" x="515.0" y="234" text-anchor="middle">75%</text>
+<line class="g" x1="610.0" y1="60" x2="610.0" y2="218"/><text class="c" x="610.0" y="234" text-anchor="middle">100%</text>
+<text class="l" x="220" y="84.0" text-anchor="end">RedSage, default</text>
+<rect class="s0" x="230" y="68" width="247.0" height="10"/>
+<line class="w" x1="453.3" y1="73.0" x2="498.9" y2="73.0"/><line class="w" x1="453.3" y1="70.0" x2="453.3" y2="76.0"/><line class="w" x1="498.9" y1="70.0" x2="498.9" y2="76.0"/>
+<text class="c" x="620" y="77">156/240</text>
+<rect class="s1" x="230" y="82" width="26.9" height="10"/>
+<line class="w" x1="247.0" y1="87.0" x2="272.0" y2="87.0"/><line class="w" x1="247.0" y1="84.0" x2="247.0" y2="90.0"/><line class="w" x1="272.0" y1="84.0" x2="272.0" y2="90.0"/>
+<text class="c" x="620" y="91">17/240</text>
+<text class="l" x="220" y="122.0" text-anchor="end">RedSage, gullible</text>
+<rect class="s0" x="230" y="106" width="266.0" height="10"/>
+<line class="w" x1="472.9" y1="111.0" x2="516.7" y2="111.0"/><line class="w" x1="472.9" y1="108.0" x2="472.9" y2="114.0"/><line class="w" x1="516.7" y1="108.0" x2="516.7" y2="114.0"/>
+<text class="c" x="620" y="115">168/240</text>
+<rect class="s1" x="230" y="120" width="30.1" height="10"/>
+<line class="w" x1="249.5" y1="125.0" x2="275.7" y2="125.0"/><line class="w" x1="249.5" y1="122.0" x2="249.5" y2="128.0"/><line class="w" x1="275.7" y1="122.0" x2="275.7" y2="128.0"/>
+<text class="c" x="620" y="129">19/240</text>
+<text class="l" x="220" y="160.0" text-anchor="end">heretic, default</text>
+<rect class="s0" x="230" y="144" width="31.7" height="10"/>
+<line class="w" x1="250.7" y1="149.0" x2="277.6" y2="149.0"/><line class="w" x1="250.7" y1="146.0" x2="250.7" y2="152.0"/><line class="w" x1="277.6" y1="146.0" x2="277.6" y2="152.0"/>
+<text class="c" x="620" y="153">20/240</text>
+<rect class="s1" x="230" y="158" width="31.7" height="10"/>
+<line class="w" x1="250.7" y1="163.0" x2="277.6" y2="163.0"/><line class="w" x1="250.7" y1="160.0" x2="250.7" y2="166.0"/><line class="w" x1="277.6" y1="160.0" x2="277.6" y2="166.0"/>
+<text class="c" x="620" y="167">20/240</text>
+<text class="l" x="220" y="198.0" text-anchor="end">heretic, gullible</text>
+<rect class="s0" x="230" y="182" width="28.5" height="10"/>
+<line class="w" x1="248.2" y1="187.0" x2="273.9" y2="187.0"/><line class="w" x1="248.2" y1="184.0" x2="248.2" y2="190.0"/><line class="w" x1="273.9" y1="184.0" x2="273.9" y2="190.0"/>
+<text class="c" x="620" y="191">18/240</text>
+<rect class="s1" x="230" y="196" width="23.8" height="10"/>
+<line class="w" x1="244.5" y1="201.0" x2="268.2" y2="201.0"/><line class="w" x1="244.5" y1="198.0" x2="244.5" y2="204.0"/><line class="w" x1="268.2" y1="198.0" x2="268.2" y2="204.0"/>
+<text class="c" x="620" y="205">15/240</text>
+<text class="c" x="12" y="252">Bars: rate. Whiskers: 95% Wilson interval.</text>
+<text class="c" x="12" y="270">240 trials per run: 8 attacks x 3 tasks x 10.</text>
+</svg>

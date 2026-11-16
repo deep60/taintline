@@ -5,6 +5,11 @@
 |---|---|---|---|
 | `enumerate` | no high-severity static finding | a high finding | |
 | `monitor` | no drift from the pins | any tool changed, added or removed | |
+| `monitor --config` | every server unchanged | drift on any server | a server could not be checked |
+| `audit` | nothing at or above `--fail-on` | a finding at or above `--fail-on` | a config could not be parsed |
+
+For the GitHub Action (config audit on pull requests, scheduled rug-pull monitor) see
+[GITHUB_ACTION.md](GITHUB_ACTION.md).
 | `live-suite --fail-above N` | valid run, exposure <= N | exposure > N | run invalid: errors, incomplete baseline, baseline completion < 90%, or stopped by a budget |
 
 An invalid run never passes: exit 3 means "this result is not evidence", not "secure".
