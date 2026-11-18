@@ -1,0 +1,19 @@
+# keep the image small and free of local data: only pyproject, uv.lock, src/ and lab/ are copied
+.git
+.venv
+out
+dist
+build
+third_party
+examples
+docs
+tests
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.DS_Store
+.env
+SCOPE.yaml
+pins.json
+taintline.yaml

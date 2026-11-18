@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 498" width="720" height="498" role="img" aria-label="Secret delivered to the attacker, by hiding technique">
+
+<style>
+  .bg{fill:#ffffff} .t{fill:#1f2328;font:600 15px system-ui,-apple-system,sans-serif}
+  .l{fill:#1f2328;font:13px system-ui,-apple-system,sans-serif} .c{fill:#59636e;font:12px ui-monospace,monospace}
+  .g{stroke:#d1d9e0} .w{stroke:#1f2328;stroke-width:1.4} .s0{fill:#2f6fde} .s1{fill:#d4762b} .s2{fill:#5b9a3e}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117} .t,.l{fill:#e6edf3} .c{fill:#9198a1} .g{stroke:#3d444d} .w{stroke:#e6edf3}
+    .s0{fill:#5a93ef} .s1{fill:#e8924c} .s2{fill:#7bbd5b}
+  }
+</style>
+<rect class="bg" width="720" height="498"/>
+<text class="t" x="12" y="24">Secret delivered to the attacker, by hiding technique</text>
+<rect class="s0" x="12" y="38" width="12" height="12"/><text class="l" x="29" y="49">default prompt</text>
+<rect class="s1" x="154" y="38" width="12" height="12"/><text class="l" x="171" y="49">gullible prompt</text>
+<line class="g" x1="230.0" y1="60" x2="230.0" y2="446"/><text class="c" x="230.0" y="462" text-anchor="middle">0%</text>
+<line class="g" x1="325.0" y1="60" x2="325.0" y2="446"/><text class="c" x="325.0" y="462" text-anchor="middle">25%</text>
+<line class="g" x1="420.0" y1="60" x2="420.0" y2="446"/><text class="c" x="420.0" y="462" text-anchor="middle">50%</text>
+<line class="g" x1="515.0" y1="60" x2="515.0" y2="446"/><text class="c" x="515.0" y="462" text-anchor="middle">75%</text>
+<line class="g" x1="610.0" y1="60" x2="610.0" y2="446"/><text class="c" x="610.0" y="462" text-anchor="middle">100%</text>
+<text class="l" x="220" y="84.0" text-anchor="end">aria-label</text>
+<rect class="s0" x="230" y="68" width="84.4" height="10"/>
+<line class="w" x1="254.0" y1="73.0" x2="438.0" y2="73.0"/><line class="w" x1="254.0" y1="70.0" x2="254.0" y2="76.0"/><line class="w" x1="438.0" y1="70.0" x2="438.0" y2="76.0"/>
+<text class="c" x="620" y="77">2/9</text>
+<rect class="s1" x="230" y="82" width="168.9" height="10"/>
+<line class="w" x1="301.7" y1="87.0" x2="508.7" y2="87.0"/><line class="w" x1="301.7" y1="84.0" x2="301.7" y2="90.0"/><line class="w" x1="508.7" y1="84.0" x2="508.7" y2="90.0"/>
+<text class="c" x="620" y="91">4/9</text>
+<text class="l" x="220" y="122.0" text-anchor="end">visible text (control)</text>
+<rect class="s0" x="230" y="106" width="84.4" height="10"/>
+<line class="w" x1="254.0" y1="111.0" x2="438.0" y2="111.0"/><line class="w" x1="254.0" y1="108.0" x2="254.0" y2="114.0"/><line class="w" x1="438.0" y1="108.0" x2="438.0" y2="114.0"/>
+<text class="c" x="620" y="115">2/9</text>
+<rect class="s1" x="230" y="120" width="126.7" height="10"/>
+<line class="w" x1="275.8" y1="125.0" x2="475.4" y2="125.0"/><line class="w" x1="275.8" y1="122.0" x2="275.8" y2="128.0"/><line class="w" x1="475.4" y1="122.0" x2="475.4" y2="128.0"/>
+<text class="c" x="620" y="129">3/9</text>
+<text class="l" x="220" y="160.0" text-anchor="end">off-screen (left:-9999px)</text>
+<rect class="s0" x="230" y="144" width="42.2" height="10"/>
+<line class="w" x1="237.6" y1="149.0" x2="395.3" y2="149.0"/><line class="w" x1="237.6" y1="146.0" x2="237.6" y2="152.0"/><line class="w" x1="395.3" y1="146.0" x2="395.3" y2="152.0"/>
+<text class="c" x="620" y="153">1/9</text>
+<rect class="s1" x="230" y="158" width="126.7" height="10"/>
+<line class="w" x1="275.8" y1="163.0" x2="475.4" y2="163.0"/><line class="w" x1="275.8" y1="160.0" x2="275.8" y2="166.0"/><line class="w" x1="475.4" y1="160.0" x2="475.4" y2="166.0"/>
+<text class="c" x="620" y="167">3/9</text>
+<text class="l" x="220" y="198.0" text-anchor="end">image alt text</text>
+<rect class="s0" x="230" y="182" width="42.2" height="10"/>
+<line class="w" x1="237.6" y1="187.0" x2="395.3" y2="187.0"/><line class="w" x1="237.6" y1="184.0" x2="237.6" y2="190.0"/><line class="w" x1="395.3" y1="184.0" x2="395.3" y2="190.0"/>
+<text class="c" x="620" y="191">1/9</text>
+<rect class="s1" x="230" y="196" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="201.0" x2="343.7" y2="201.0"/><line class="w" x1="230.0" y1="198.0" x2="230.0" y2="204.0"/><line class="w" x1="343.7" y1="198.0" x2="343.7" y2="204.0"/>
+<text class="c" x="620" y="205">0/9</text>
+<text class="l" x="220" y="236.0" text-anchor="end">white on white</text>
+<rect class="s0" x="230" y="220" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="225.0" x2="343.7" y2="225.0"/><line class="w" x1="230.0" y1="222.0" x2="230.0" y2="228.0"/><line class="w" x1="343.7" y1="222.0" x2="343.7" y2="228.0"/>
+<text class="c" x="620" y="229">0/9</text>
+<rect class="s1" x="230" y="234" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="239.0" x2="343.7" y2="239.0"/><line class="w" x1="230.0" y1="236.0" x2="230.0" y2="242.0"/><line class="w" x1="343.7" y1="236.0" x2="343.7" y2="242.0"/>
+<text class="c" x="620" y="243">0/9</text>
+<text class="l" x="220" y="274.0" text-anchor="end">hidden form field label</text>
+<rect class="s0" x="230" y="258" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="263.0" x2="343.7" y2="263.0"/><line class="w" x1="230.0" y1="260.0" x2="230.0" y2="266.0"/><line class="w" x1="343.7" y1="260.0" x2="343.7" y2="266.0"/>
+<text class="c" x="620" y="267">0/9</text>
+<rect class="s1" x="230" y="272" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="277.0" x2="343.7" y2="277.0"/><line class="w" x1="230.0" y1="274.0" x2="230.0" y2="280.0"/><line class="w" x1="343.7" y1="274.0" x2="343.7" y2="280.0"/>
+<text class="c" x="620" y="281">0/9</text>
+<text class="l" x="220" y="312.0" text-anchor="end">cookie / localStorage</text>
+<rect class="s0" x="230" y="296" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="301.0" x2="343.7" y2="301.0"/><line class="w" x1="230.0" y1="298.0" x2="230.0" y2="304.0"/><line class="w" x1="343.7" y1="298.0" x2="343.7" y2="304.0"/>
+<text class="c" x="620" y="305">0/9</text>
+<rect class="s1" x="230" y="310" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="315.0" x2="343.7" y2="315.0"/><line class="w" x1="230.0" y1="312.0" x2="230.0" y2="318.0"/><line class="w" x1="343.7" y1="312.0" x2="343.7" y2="318.0"/>
+<text class="c" x="620" y="319">0/9</text>
+<text class="l" x="220" y="350.0" text-anchor="end">display:none</text>
+<rect class="s0" x="230" y="334" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="339.0" x2="343.7" y2="339.0"/><line class="w" x1="230.0" y1="336.0" x2="230.0" y2="342.0"/><line class="w" x1="343.7" y1="336.0" x2="343.7" y2="342.0"/>
+<text class="c" x="620" y="343">0/9</text>
+<rect class="s1" x="230" y="348" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="353.0" x2="343.7" y2="353.0"/><line class="w" x1="230.0" y1="350.0" x2="230.0" y2="356.0"/><line class="w" x1="343.7" y1="350.0" x2="343.7" y2="356.0"/>
+<text class="c" x="620" y="357">0/9</text>
+<text class="l" x="220" y="388.0" text-anchor="end">HTML comment</text>
+<rect class="s0" x="230" y="372" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="377.0" x2="343.7" y2="377.0"/><line class="w" x1="230.0" y1="374.0" x2="230.0" y2="380.0"/><line class="w" x1="343.7" y1="374.0" x2="343.7" y2="380.0"/>
+<text class="c" x="620" y="381">0/9</text>
+<rect class="s1" x="230" y="386" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="391.0" x2="343.7" y2="391.0"/><line class="w" x1="230.0" y1="388.0" x2="230.0" y2="394.0"/><line class="w" x1="343.7" y1="388.0" x2="343.7" y2="394.0"/>
+<text class="c" x="620" y="395">0/9</text>
+<text class="l" x="220" y="426.0" text-anchor="end">input type=hidden</text>
+<rect class="s0" x="230" y="410" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="415.0" x2="343.7" y2="415.0"/><line class="w" x1="230.0" y1="412.0" x2="230.0" y2="418.0"/><line class="w" x1="343.7" y1="412.0" x2="343.7" y2="418.0"/>
+<text class="c" x="620" y="419">0/9</text>
+<rect class="s1" x="230" y="424" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="429.0" x2="343.7" y2="429.0"/><line class="w" x1="230.0" y1="426.0" x2="230.0" y2="432.0"/><line class="w" x1="343.7" y1="426.0" x2="343.7" y2="432.0"/>
+<text class="c" x="620" y="433">0/9</text>
+<text class="c" x="12" y="480">Bars: rate. Whiskers: 95% Wilson interval.</text>
+<text class="c" x="12" y="498">Model: redsage-qwen3-8b-ins. 3 pages x 3 trials per bar.</text>
+</svg>

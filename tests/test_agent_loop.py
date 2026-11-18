@@ -1,10 +1,10 @@
 from types import SimpleNamespace as NS
 
-from tripwire.attacks import load_attacks
-from tripwire.attacks.runner import run_suite
-from tripwire.sandbox import Sandbox
-from tripwire.targets.own_agent import AgentTimeout, AnthropicAgent
-from tripwire.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.attacks.runner import run_suite
+from taintline.sandbox import Sandbox
+from taintline.targets.own_agent import AgentTimeout, AnthropicAgent
+from taintline.tasks import TASKS
 
 
 def tool_use(name="read_file", args=None):

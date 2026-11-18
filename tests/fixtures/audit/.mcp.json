@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"]
+    },
+    "remote": {
+      "url": "http://mcp.example.com/mcp"
+    },
+    "pinned": {
+      "command": "uvx",
+      "args": ["mcp-server-git==0.6.2", "--repository", "."]
+    }
+  }
+}

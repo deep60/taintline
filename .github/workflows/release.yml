@@ -1,0 +1,95 @@
+# Release on a version tag: test, build, smoke-test the wheel, publish to PyPI (trusted publishing,
+# no API token stored), create the GitHub release, push the Docker image to GHCR.
+# UNTESTED ON GITHUB. Before the first tag:
+#   - PyPI: add a "pending trusted publisher" for this repo, workflow release.yml, environment pypi
+#   - GitHub: create the `pypi` environment (Settings > Environments), ideally with a required reviewer
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run ruff check src tests scripts
+      - run: uv run python -m pytest -q
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Tag must match the package version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/taintline/__init__.py)
+          test "v$version" = "$TAG" || { echo "::error::tag $TAG does not match version $version"; exit 1; }
+      - run: uv build
+      - name: Smoke-test the wheel outside the checkout
+        run: |
+          uv venv /tmp/wheel-venv --python 3.12
+          VIRTUAL_ENV=/tmp/wheel-venv uv pip install dist/*.whl
+          cd /tmp
+          /tmp/wheel-venv/bin/taintline --version
+          /tmp/wheel-venv/bin/taintline demo --out /tmp/demo-out
+          test -s /tmp/demo-out/replay.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write          # trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist/ }
+      - name: Create the release with the changelog section
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          notes=$(awk -v v="${TAG#v}" '$0 ~ "^## \\[?"v {f=1; next} /^## / {f=0} f' CHANGELOG.md)
+          gh release create "$TAG" dist/* --title "$TAG" --notes "${notes:-See CHANGELOG.md}"
+
+  docker:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}:latest

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 192" width="720" height="192" role="img" aria-label="Lab notes: secret delivered to the attacker">
+
+<style>
+  .bg{fill:#ffffff} .t{fill:#1f2328;font:600 15px system-ui,-apple-system,sans-serif}
+  .l{fill:#1f2328;font:13px system-ui,-apple-system,sans-serif} .c{fill:#59636e;font:12px ui-monospace,monospace}
+  .g{stroke:#d1d9e0} .w{stroke:#1f2328;stroke-width:1.4} .s0{fill:#2f6fde} .s1{fill:#d4762b} .s2{fill:#5b9a3e}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117} .t,.l{fill:#e6edf3} .c{fill:#9198a1} .g{stroke:#3d444d} .w{stroke:#e6edf3}
+    .s0{fill:#5a93ef} .s1{fill:#e8924c} .s2{fill:#7bbd5b}
+  }
+</style>
+<rect class="bg" width="720" height="192"/>
+<text class="t" x="12" y="24">Lab notes: secret delivered to the attacker</text>
+<line class="g" x1="230.0" y1="38" x2="230.0" y2="140"/><text class="c" x="230.0" y="156" text-anchor="middle">0%</text>
+<line class="g" x1="325.0" y1="38" x2="325.0" y2="140"/><text class="c" x="325.0" y="156" text-anchor="middle">25%</text>
+<line class="g" x1="420.0" y1="38" x2="420.0" y2="140"/><text class="c" x="420.0" y="156" text-anchor="middle">50%</text>
+<line class="g" x1="515.0" y1="38" x2="515.0" y2="140"/><text class="c" x="515.0" y="156" text-anchor="middle">75%</text>
+<line class="g" x1="610.0" y1="38" x2="610.0" y2="140"/><text class="c" x="610.0" y="156" text-anchor="middle">100%</text>
+<text class="l" x="220" y="55.0" text-anchor="end">qwen3.8-9b-heretic-uncensore (default)</text>
+<rect class="s0" x="230" y="46" width="31.7" height="10"/>
+<line class="w" x1="250.7" y1="51.0" x2="277.6" y2="51.0"/><line class="w" x1="250.7" y1="48.0" x2="250.7" y2="54.0"/><line class="w" x1="277.6" y1="48.0" x2="277.6" y2="54.0"/>
+<text class="c" x="620" y="55">20/240</text>
+<text class="l" x="220" y="79.0" text-anchor="end">qwen3.8-9b-heretic-uncensore (gullible)</text>
+<rect class="s0" x="230" y="70" width="23.8" height="10"/>
+<line class="w" x1="244.5" y1="75.0" x2="268.2" y2="75.0"/><line class="w" x1="244.5" y1="72.0" x2="244.5" y2="78.0"/><line class="w" x1="268.2" y1="72.0" x2="268.2" y2="78.0"/>
+<text class="c" x="620" y="79">15/240</text>
+<text class="l" x="220" y="103.0" text-anchor="end">redsage-qwen3-8b-ins (default)</text>
+<rect class="s0" x="230" y="94" width="26.9" height="10"/>
+<line class="w" x1="247.0" y1="99.0" x2="272.0" y2="99.0"/><line class="w" x1="247.0" y1="96.0" x2="247.0" y2="102.0"/><line class="w" x1="272.0" y1="96.0" x2="272.0" y2="102.0"/>
+<text class="c" x="620" y="103">17/240</text>
+<text class="l" x="220" y="127.0" text-anchor="end">redsage-qwen3-8b-ins (gullible)</text>
+<rect class="s0" x="230" y="118" width="30.1" height="10"/>
+<line class="w" x1="249.5" y1="123.0" x2="275.7" y2="123.0"/><line class="w" x1="249.5" y1="120.0" x2="249.5" y2="126.0"/><line class="w" x1="275.7" y1="120.0" x2="275.7" y2="126.0"/>
+<text class="c" x="620" y="127">19/240</text>
+<text class="c" x="12" y="174">Bars: rate. Whiskers: 95% Wilson interval.</text>
+<text class="c" x="12" y="192">Invalid runs are included in this chart; the table above shows which.</text>
+</svg>

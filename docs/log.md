@@ -1,4 +1,4 @@
-# Tripwire log
+# Taintline log
 
 One entry per week. Three lines each: what ran, what broke, what you decided.
 

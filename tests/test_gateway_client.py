@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from tripwire.cli import main
-from tripwire.gateway.hash import hash_tools
-from tripwire.scanner.enumerate import enumerate_server
-from tripwire.scope import Gate, OutOfScope, parse_scope
+from taintline.cli import main
+from taintline.gateway.hash import hash_tools
+from taintline.scanner.enumerate import enumerate_server
+from taintline.scope import Gate, OutOfScope, parse_scope
 
 SERVER = str(Path(__file__).parent.parent / "lab" / "servers" / "notes_server.py")
 

@@ -1,6 +1,6 @@
 import pytest
 
-from tripwire.cli import main
+from taintline.cli import main
 
 SCOPE = """name: t
 authorized_by: me

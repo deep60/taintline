@@ -10,3 +10,10 @@ dist/
 build/
 # never commit real attack data or live scope files
 SCOPE.yaml
+
+# run data and macOS cruft stay out of source commits
+out/
+.DS_Store
+
+# third-party server installs (docs/THIRD_PARTY.md)
+third_party/

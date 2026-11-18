@@ -1,11 +1,11 @@
 import json
 
-from tripwire.attacks import load_attacks
-from tripwire.attacks.runner import run_suite
-from tripwire.cli import main
-from tripwire.rescore import rescore
-from tripwire.targets import MockAgent
-from tripwire.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.attacks.runner import run_suite
+from taintline.cli import main
+from taintline.rescore import rescore
+from taintline.targets import MockAgent
+from taintline.tasks import TASKS
 
 
 class ChattyAgent:

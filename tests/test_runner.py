@@ -1,9 +1,9 @@
-from tripwire.attacks import load_attacks
-from tripwire.attacks.runner import run_suite
-from tripwire.sandbox import BASE_TOOLS
-from tripwire.scoring import score, wilson
-from tripwire.targets import MockAgent
-from tripwire.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.attacks.runner import run_suite
+from taintline.sandbox import BASE_TOOLS
+from taintline.scoring import score, wilson
+from taintline.targets import MockAgent
+from taintline.tasks import TASKS
 
 
 def test_wilson_bounds():

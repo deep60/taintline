@@ -1,7 +1,7 @@
 import pytest
 
-from tripwire.attacks import load_attacks
-from tripwire.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.tasks import TASKS
 
 
 @pytest.fixture

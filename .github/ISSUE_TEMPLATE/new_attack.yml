@@ -1,0 +1,38 @@
+name: New attack idea
+description: Propose an injection or exfiltration technique to add to the attack library.
+title: "attack: "
+labels: ["attack", "good first attack"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Attacks run only against the bundled lab servers and the fake acme.example / evil.example world.
+        Do not include real companies, people, domains or credentials. See CONTRIBUTING.md.
+  - type: dropdown
+    id: lab
+    attributes:
+      label: Which lab?
+      options: [any template lab (generic), notes, inbox, web, files+inbox, db+web, browser, shadow+inbox, poisoned+inbox, needs a new lab]
+    validations: { required: true }
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where does the payload ride in?
+      options: [tool_result, tool_description, page (browser), native (malicious server), other]
+    validations: { required: true }
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What makes this different from the attacks already in the library? (persuasion style, disguise, hiding place, encoding, timing)
+    validations: { required: true }
+  - type: textarea
+    id: yaml
+    attributes:
+      label: Draft YAML (optional)
+      render: yaml
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Run results (optional)
+      description: The report table and the command you ran. Include the `fired` column; errored trials are not "resisted".
