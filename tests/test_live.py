@@ -135,7 +135,7 @@ def test_gullible_flag_sets_system_prompt(tmp_path, monkeypatch):
     sc.write_text("name: t\nauthorized_by: me\nservers: [notes, 'localhost:11434']\n")
     (tmp_path / "o").mkdir()
     cli.main(["live-run", "--server", "notes", "--command", "x", "--agent", "ollama", "--model", "m",
-              "--scope", str(sc), "--gullible", "-n", "1", "--out", str(tmp_path / "o")])
+              "--scope", str(sc), "--gullible", "--no-preflight", "-n", "1", "--out", str(tmp_path / "o")])
     assert seen["s"] == live.GULLIBLE_SYSTEM
 
 

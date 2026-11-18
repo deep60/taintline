@@ -16,6 +16,9 @@ First public release. (Developed as "Tripwire"; renamed before release.)
   path and every process start.
 - Model requests that time out, or hit 429/502/503/504, are retried with backoff
   (`--request-timeout`, `--retries`). Every retry is counted in the results.
+- Before trial 1, the model server is asked for its model list. A server that isn't running, or one
+  that doesn't offer `--model`, stops the run at once instead of producing hundreds of errored
+  trials (`--no-preflight` skips the check).
 
 ### See it
 - `dyepack demo`: watch a leak happen and get proven, with no model, key or network. Docker image

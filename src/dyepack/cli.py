@@ -56,6 +56,22 @@ def _write_ocsf(findings, path: str) -> None:
     print(f"ocsf: {len(events)} event(s) -> {path}", file=sys.stderr)
 
 
+def _preflight(a) -> None:
+    """One cheap request to the model server before trial 1 (after the scope gate approved its host)."""
+    if getattr(a, "no_preflight", False):
+        return
+    from .targets.preflight import EndpointUnavailable, check_endpoint
+    try:
+        warning = check_endpoint(a.agent, a.model, a.base_url, a.api_key_env)
+    except EndpointUnavailable as e:
+        raise SystemExit(f"error: {e}\nNo trials were run. (--no-preflight skips this check.)")
+    if warning:
+        print(f"preflight: {warning}", file=sys.stderr)
+
+
+PREFLIGHT_HELP = "skip the check that the model server answers and offers --model before trial 1"
+
+
 def _notify(gate, a, findings, source: str) -> None:
     """Signed webhook when the findings warrant one; a delivery failure never changes the exit code."""
     if not a.notify_url:
@@ -109,6 +125,7 @@ def main(argv=None):
                    help="authorization file; required for any agent that contacts a network host")
     r.add_argument("--dry-run", action="store_true",
                    help="check scope and print the plan; make no model calls and touch no network")
+    r.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
 
     s = sub.add_parser("scan", help="static scan of an MCP tool manifest (JSON)")
     s.add_argument("manifest")
@@ -181,6 +198,7 @@ def main(argv=None):
     lv.add_argument("-n", type=int, default=5)
     lv.add_argument("--scope", default="SCOPE.yaml")
     lv.add_argument("--out", default="out/live")
+    lv.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
 
     bb = sub.add_parser("blackbox", help="test a chat endpoint you are authorized to test (M6); "
                                          "plants an injection, the collaborator sink proves any leak")
@@ -210,6 +228,7 @@ def main(argv=None):
         ls2.add_argument(flag, **kw)
     ls2.add_argument("--arg", action="append", default=[])
     ls2.add_argument("--gullible", action="store_true")
+    ls2.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
     ls2.add_argument("--request-timeout", type=float,
                      help="seconds to wait for one model reply (default 120 openai-compat, 300 ollama)")
     ls2.add_argument("--retries", type=int, default=2,
@@ -569,6 +588,7 @@ def main(argv=None):
             if a.dry_run:
                 print("dry run: no calls made")
                 return
+            _preflight(a)
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
             factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env,
                                          temperature=a.temperature, fix_seed=a.fix_seed,
@@ -629,6 +649,7 @@ def main(argv=None):
                 raise SystemExit(run_proxy(a.server_cmd, a.transcript,
                                            json.loads(a.inject_json) if a.inject_json else None))
             check_run(gate, a.agent, a.base_url)
+            _preflight(a)
             from .gateway.live import (
                 DEFAULT_PAYLOAD,
                 GULLIBLE_SYSTEM,
@@ -708,6 +729,7 @@ def main(argv=None):
               f"scope={gate.scope.name if gate else 'not needed'} attacks={len(attacks)} "
               f"tasks={len(TASKS)} n={a.n}; no calls made")
         return
+    _preflight(a)
     factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env)
     result = run_suite(factory, attacks, TASKS, a.n)
     result["meta"] = meta.collect(agent=a.agent, model=a.model, system_override=bool(a.system),

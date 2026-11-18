@@ -24,22 +24,24 @@ def post_json(agent, url: str, payload: dict, headers: dict | None = None) -> di
     import httpx
 
     attempts = agent.max_retries + 1
-    last = ""
+    last, refused = "", False
     for i in range(attempts):
         try:
             r = agent._http().post(url, json=payload, headers=headers or {})
             status = getattr(r, "status_code", 200)
             if status in RETRY_STATUS:
-                last = f"HTTP {status}"
+                last, refused = f"HTTP {status}", False
             else:
                 r.raise_for_status()
                 return r.json()
         except httpx.TimeoutException:
-            last = f"timed out after {agent.timeout:g}s"
+            last, refused = f"timed out after {agent.timeout:g}s", False
         except httpx.TransportError as e:          # refused, reset, DNS: the server, not the agent
             last = f"{type(e).__name__}: {e}"
+            refused = isinstance(e, httpx.ConnectError)
         if i < attempts - 1:
             agent.retries += 1
             time.sleep(agent.backoff * (2 ** i))
-    raise ModelRequestFailed(f"model request failed {attempts} time(s), last: {last} "
-                             f"(raise --request-timeout or --retries if the server is just slow)")
+    hint = ("is the model server running? check the port in --base-url" if refused
+            else "raise --request-timeout or --retries if the server is just slow")
+    raise ModelRequestFailed(f"model request failed {attempts} time(s), last: {last} ({hint})")
