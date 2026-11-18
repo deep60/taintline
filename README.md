@@ -10,17 +10,39 @@ counts errors instead of treating them as "secure".
 > [THREAT_MODEL.md](THREAT_MODEL.md) first.
 
 ## What works today
+
+**Run on real models.** These have produced results with local models (RedSage 8B, gpt-oss 20B,
+llama3.1) through LM Studio and Ollama. The numbers are in [docs/findings](docs/findings) and
+[docs/leaderboard](docs/leaderboard).
+
 | Capability | Command |
 |---|---|
-| Scope gate: refuses any target not in `SCOPE.yaml` | automatic on every networked command |
-| Hermetic harness with mock/real agents | `dyepack run` |
-| List tools of a live stdio MCP server, scan them | `dyepack enumerate` |
-| Rug-pull detection (tool changed since pinned) | `dyepack monitor`, `pin`, `diff` |
-| Recording proxy with injection planting | `dyepack proxy` |
-| Live attack on a real MCP server, leak proven at a sink | `dyepack live-run`, `live-suite` |
-| Oracle validation workflow (human labels) | `label-sheet`, `gate0`, `rescore` |
+| See a leak happen and get proven, with no model, key or network | `dyepack demo` |
+| Every attack against every task on a real MCP lab server; a leak counts only when the canary reaches the sink | `dyepack live-suite --lab NAME` (8 labs, 24 tasks: `dyepack labs`) |
+| One attack against your own stdio MCP server, through a recording proxy | `dyepack live-run`, `dyepack proxy` |
+| Confidence intervals, a clean baseline for false alarms, positive controls, budgets, invalid-run detection | built into `live-suite` (`--gullible`, `--max-trials`, `--fail-above`) |
+| Retries counted in the results; stops before trial 1 if the model server doesn't answer | `--request-timeout`, `--retries` |
+| Step-by-step HTML replay of a run | `replay.html` in every run folder, `dyepack replay` |
+| Scope gate: refuses any host, server or process not in `SCOPE.yaml` | automatic |
 
-Not built yet: Streamable HTTP transport, SARIF output, PyPI release, black-box HTTP target.
+**Built and tested, not yet proven in the field.** These pass their tests and were run locally,
+but haven't been used on someone else's system or on GitHub yet.
+
+| Capability | Command | not yet done |
+|---|---|---|
+| Find MCP client configs and flag pasted secrets, plain http, unpinned packages, broad filesystem access | `dyepack audit` | — |
+| Rug-pull detection: alert when a server's tools change | `dyepack monitor`, `--config` for every server in a config | — |
+| List and scan the tools of a stdio or Streamable HTTP server | `dyepack enumerate`, `scan`, `pin`, `diff` | — |
+| SARIF 2.1.0 and OCSF output, signed webhooks | `--sarif`, `dyepack sarif`, `dyepack ocsf`, `--notify-url` | upload to GitHub code scanning |
+| GitHub Action for audit and monitor | [action.yml](action.yml), [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md) | a run on GitHub |
+| Black-box test of a chat endpoint you're authorized to test | `dyepack blackbox` | a run on a real copilot |
+| Check the oracle against human labels | `label-sheet`, `gate0`, `rescore` | 30 labels ([docs/oracle_validation.md](docs/oracle_validation.md)) |
+| Docker image, PyPI package, release workflow | `docker run --rm --network none dyepack`, [docs/RELEASE.md](docs/RELEASE.md) | first release |
+
+**Not built:** frontier-model benchmarks (Claude, GPT, Gemini), a real browser MCP server
+(the browser lab is simulated), targets for agent frameworks (LangGraph, OpenAI Agents SDK,
+Bedrock), an adaptive attacker, and a server or dashboard. See
+[docs/ENTERPRISE_PLAN.md](docs/ENTERPRISE_PLAN.md).
 
 ## Quickstart (about 10 minutes, local model, nothing leaves your machine)
 ```bash
@@ -78,9 +100,9 @@ uv run dyepack monitor --server notes --command python --arg lab/servers/notes_s
 ## Caveats
 - `mock-*` agents are not models; they only prove the harness works.
 - `--agent anthropic` is untested against the live API.
-- Scoring weights are assumptions. Coverage is small: one lab server, 8 attacks, 3 tasks.
+- Scoring weights are assumptions. The labs are small and simulated (8 labs, 24 tasks).
 - The oracle has not yet been validated by human labeling (`docs/oracle_validation.md`).
-- `lab/docker-compose.yml` and the CI workflow are untested.
+- Results so far come from local 7–20B models only.
 - Only test systems you own or are authorized to test.
 
 More: [docs/BUILD_GUIDE.md](docs/BUILD_GUIDE.md), [docs/PLAN.md](docs/PLAN.md), [docs/writing_chains.md](docs/writing_chains.md).
