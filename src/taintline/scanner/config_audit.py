@@ -1,4 +1,4 @@
-"""`dyepack audit`: find the MCP client configs on this machine (or in a repo) and check each server
+"""`taintline audit`: find the MCP client configs on this machine (or in a repo) and check each server
 entry without starting anything.
 
 Static checks only. Nothing here runs a server, resolves a package or touches the network:

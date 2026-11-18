@@ -1,6 +1,6 @@
 import pytest
 
-from dyepack.scope import Gate, OutOfScope, ScopeError, parse_scope
+from taintline.scope import Gate, OutOfScope, ScopeError, parse_scope
 
 
 def good(**kw):

@@ -1,9 +1,9 @@
 """Signed webhooks: tell another system when `monitor` sees drift or a live run delivers a leak.
 
 Every request carries
-    X-Dyepack-Timestamp: unix seconds
-    X-Dyepack-Signature: sha256=<hex HMAC-SHA256 of "<timestamp>.<raw body>">
-    X-Dyepack-Event:     drift | leak | invalid_run
+    X-Taintline-Timestamp: unix seconds
+    X-Taintline-Signature: sha256=<hex HMAC-SHA256 of "<timestamp>.<raw body>">
+    X-Taintline-Event:     drift | leak | invalid_run
 so a receiver can reject forgeries and replays (`verify`). The secret comes from an environment
 variable, never the command line. The destination must be in SCOPE.yaml like any other network
 target, must be https (loopback http is allowed for local receivers), and redirects are not followed.
@@ -24,7 +24,7 @@ from .report.frameworks import flat
 from .report.sarif import Finding, fingerprint
 
 LOOPBACK = {"localhost", "127.0.0.1", "::1"}
-SCHEMA = "dyepack.webhook/1"
+SCHEMA = "taintline.webhook/1"
 
 
 class NotifyError(RuntimeError):
@@ -40,8 +40,8 @@ def verify(body: bytes, headers: dict, secret: str, tolerance: int = 300, now: f
     """For receivers: True only if the signature matches and the timestamp is fresh."""
     h = {k.lower(): v for k, v in headers.items()}
     try:
-        ts = int(h["x-dyepack-timestamp"])
-        got = h["x-dyepack-signature"]
+        ts = int(h["x-taintline-timestamp"])
+        got = h["x-taintline-signature"]
     except (KeyError, ValueError):
         return False
     if abs((time.time() if now is None else now) - ts) > tolerance:
@@ -87,9 +87,9 @@ def send(gate, url: str, payload: dict, secret_env: str, timeout: float = 10.0, 
         raise NotifyError(f"environment variable {secret_env} is not set (it holds the signing secret)")
     body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
     ts = int(time.time())
-    headers = {"Content-Type": "application/json", "User-Agent": "dyepack-webhook/1",
-               "X-Dyepack-Timestamp": str(ts), "X-Dyepack-Signature": sign(body, secret, ts),
-               "X-Dyepack-Event": payload["event"]}
+    headers = {"Content-Type": "application/json", "User-Agent": "taintline-webhook/1",
+               "X-Taintline-Timestamp": str(ts), "X-Taintline-Signature": sign(body, secret, ts),
+               "X-Taintline-Event": payload["event"]}
     if dry_run:
         return {"status": None, "attempts": 0, "dry_run": True, "bytes": len(body)}
     import httpx

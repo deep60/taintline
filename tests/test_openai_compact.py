@@ -2,13 +2,13 @@ import json
 
 import pytest
 
-from dyepack.attacks import load_attacks
-from dyepack.attacks.runner import run_suite
-from dyepack.sandbox import Sandbox
-from dyepack.targets import make_agent_factory
-from dyepack.targets.openai_compat import OpenAICompatAgent, to_openai_tools
-from dyepack.targets.own_agent import AgentTimeout
-from dyepack.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.attacks.runner import run_suite
+from taintline.sandbox import Sandbox
+from taintline.targets import make_agent_factory
+from taintline.targets.openai_compat import OpenAICompatAgent, to_openai_tools
+from taintline.targets.own_agent import AgentTimeout
+from taintline.tasks import TASKS
 
 
 def final(text):

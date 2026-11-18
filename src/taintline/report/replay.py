@@ -133,7 +133,7 @@ def _page(title: str, sub: str, stats: list[tuple[str, str]], sections: list[tup
             f'<meta http-equiv="Content-Security-Policy" content="{CSP}">'
             f"<title>{_e(title)}</title><style>{CSS}</style></head><body><main>"
             f'<h1>{_e(title)}</h1><p class="sub">{_e(sub)}</p><div class="stats">{stat_html}</div>{body}'
-            f"<footer>Dyepack replay. Success is decided only by the canary arriving at the sink, "
+            f"<footer>Taintline replay. Success is decided only by the canary arriving at the sink, "
             f"never by an LLM judge. Highlighted amber: injected text. Red: the secret.</footer>"
             f"</main></body></html>")
 
@@ -151,7 +151,7 @@ def demo_html(res: dict, payload: str) -> str:
     stats = [("attack leaked", "yes" if s["attack_leaked"] else "no"),
              ("baseline false alarm", "yes" if s["baseline_false_alarm"] else "no"),
              ("errors", str(s["errors"]))]
-    return _page("Dyepack demo replay", f"Agent: {res.get('agent', '?')}", stats, [("Scenes", items)])
+    return _page("Taintline demo replay", f"Agent: {res.get('agent', '?')}", stats, [("Scenes", items)])
 
 
 def suite_html(res: dict, payloads: dict[str, str] | None = None, prompts: dict[str, str] | None = None,
@@ -183,7 +183,7 @@ def suite_html(res: dict, payloads: dict[str, str] | None = None, prompts: dict[
                 ("Baseline (no attack), one per task", render(base, 50)),
                 (f"Resisted{more(resisted, 5)}", render(resisted, 5))]
     sub = f"Lab {res.get('lab') or res.get('server', '?')} · n={res.get('n_per_pair', '?')} per pair"
-    return _page("Dyepack replay", sub, stats, sections)
+    return _page("Taintline replay", sub, stats, sections)
 
 
 def write_replay(res: dict, path: str | Path) -> Path:

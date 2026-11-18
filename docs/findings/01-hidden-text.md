@@ -1,6 +1,6 @@
 # Hidden text that isn't hidden: what a browser agent still reads
 
-*Dyepack findings #1. Every number on this page is generated from run data by
+*Taintline findings #1. Every number on this page is generated from run data by
 `scripts/build_findings.py`, not typed by hand.*
 
 **Short version:** a browser tool that hands the model an accessibility snapshot drops
@@ -50,7 +50,7 @@ What stands out:
    rate as writing the instruction openly, while a person reviewing the page sees a button labelled
    "Help".
 3. **Contact is not the same as a leak.** In the cookie variant, the agent reached the attacker's
-   server in 7 of 18 trials, but none of those requests carried the key. Dyepack reports the two
+   server in 7 of 18 trials, but none of those requests carried the key. Taintline reports the two
    separately.
 
 ## What to do about it
@@ -83,7 +83,7 @@ What stands out:
 Reproduce (LM Studio on port 1234, model loaded, host in SCOPE.yaml):
 
 ```bash
-dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --out out/rs_browser_default
-dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --gullible --out out/rs_browser_gullible
+taintline live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --out out/rs_browser_default
+taintline live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab browser -n 3 --gullible --out out/rs_browser_gullible
 ```
 <!-- /tw:hidden_runs -->

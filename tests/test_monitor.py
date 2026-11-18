@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from dyepack.cli import main
+from taintline.cli import main
 
 SERVER_TMPL = '''
 from mcp.server.mcpserver import MCPServer

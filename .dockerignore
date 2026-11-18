@@ -16,4 +16,4 @@ tests
 .env
 SCOPE.yaml
 pins.json
-dyepack.yaml
+taintline.yaml

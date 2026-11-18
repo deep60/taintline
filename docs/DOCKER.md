@@ -1,17 +1,17 @@
-# Running Dyepack in Docker
+# Running Taintline in Docker
 
 You need Docker Desktop (or any Docker engine) running. Nothing else: Python, uv and the lab
 servers are all inside the image.
 
 ## 1. Build the image (once, about 1-2 minutes)
 ```bash
-docker build -t dyepack .
+docker build -t taintline .
 ```
 The first build downloads the `python:3.12-slim` base image and the pinned `uv` binary.
 
 ## 2. Watch the demo (no network, no model, no API key)
 ```bash
-docker run --rm --network none dyepack
+docker run --rm --network none taintline
 ```
 Three scenes run against the real `notes` MCP server inside the container:
 1. **Baseline:** a normal task. The sink stays empty.
@@ -25,7 +25,7 @@ scripted stand-ins, not models.
 
 To keep the results file, mount a folder:
 ```bash
-docker run --rm --network none -v "$PWD/out:/app/out" dyepack
+docker run --rm --network none -v "$PWD/out:/app/out" taintline
 ```
 It writes `out/demo/demo.json` and `out/demo/replay.html`. Open the replay in a browser to step
 through each scene: where the injected text came in, and where the secret left. Or use compose, which adds a read-only filesystem and drops all capabilities:
@@ -46,7 +46,7 @@ The container reaches a model on your Mac at `host.docker.internal`.
    ```
 3. Run it, mounting the scope file read-only:
    ```bash
-   docker run --rm -v "$PWD/SCOPE.yaml:/app/SCOPE.yaml:ro" -v "$PWD/out:/app/out" dyepack \
+   docker run --rm -v "$PWD/SCOPE.yaml:/app/SCOPE.yaml:ro" -v "$PWD/out:/app/out" taintline \
      demo --agent openai-compat --model YOUR_MODEL_ID --base-url http://host.docker.internal:1234/v1
    ```
    For Ollama, use `--agent ollama --base-url http://host.docker.internal:11434` instead.
@@ -54,10 +54,10 @@ The container reaches a model on your Mac at `host.docker.internal`.
 One trial is a demo, not a measurement. For rates with confidence intervals, run `live-suite`.
 
 ## 4. Any other command
-The image's entrypoint is `dyepack`, so any subcommand works:
+The image's entrypoint is `taintline`, so any subcommand works:
 ```bash
-docker run --rm dyepack labs
-docker run --rm dyepack --help
+docker run --rm taintline labs
+docker run --rm taintline --help
 ```
 
 ## Exit codes

@@ -1,6 +1,6 @@
-# Dyepack
+# Taintline
 
-Red team for AI agents and the MCP servers they connect to. Dyepack plants prompt injection
+Red team for AI agents and the MCP servers they connect to. Taintline plants prompt injection
 and tool poisoning in what an agent reads, then decides success with **deterministic
 checks, no LLM judge**: did a unique canary secret actually arrive at a sink you control?
 It reports attack success with confidence intervals, a benign baseline (false alarms), and
@@ -17,12 +17,12 @@ llama3.1) through LM Studio and Ollama. The numbers are in [docs/findings](docs/
 
 | Capability | Command |
 |---|---|
-| See a leak happen and get proven, with no model, key or network | `dyepack demo` |
-| Every attack against every task on a real MCP lab server; a leak counts only when the canary reaches the sink | `dyepack live-suite --lab NAME` (8 labs, 24 tasks: `dyepack labs`) |
-| One attack against your own stdio MCP server, through a recording proxy | `dyepack live-run`, `dyepack proxy` |
+| See a leak happen and get proven, with no model, key or network | `taintline demo` |
+| Every attack against every task on a real MCP lab server; a leak counts only when the canary reaches the sink | `taintline live-suite --lab NAME` (8 labs, 24 tasks: `taintline labs`) |
+| One attack against your own stdio MCP server, through a recording proxy | `taintline live-run`, `taintline proxy` |
 | Confidence intervals, a clean baseline for false alarms, positive controls, budgets, invalid-run detection | built into `live-suite` (`--gullible`, `--max-trials`, `--fail-above`) |
 | Retries counted in the results; stops before trial 1 if the model server doesn't answer | `--request-timeout`, `--retries` |
-| Step-by-step HTML replay of a run | `replay.html` in every run folder, `dyepack replay` |
+| Step-by-step HTML replay of a run | `replay.html` in every run folder, `taintline replay` |
 | Scope gate: refuses any host, server or process not in `SCOPE.yaml` | automatic |
 
 **Built and tested, not yet proven in the field.** These pass their tests and were run locally,
@@ -30,14 +30,14 @@ but haven't been used on someone else's system or on GitHub yet.
 
 | Capability | Command | not yet done |
 |---|---|---|
-| Find MCP client configs and flag pasted secrets, plain http, unpinned packages, broad filesystem access | `dyepack audit` | — |
-| Rug-pull detection: alert when a server's tools change | `dyepack monitor`, `--config` for every server in a config | — |
-| List and scan the tools of a stdio or Streamable HTTP server | `dyepack enumerate`, `scan`, `pin`, `diff` | — |
-| SARIF 2.1.0 and OCSF output, signed webhooks | `--sarif`, `dyepack sarif`, `dyepack ocsf`, `--notify-url` | upload to GitHub code scanning |
+| Find MCP client configs and flag pasted secrets, plain http, unpinned packages, broad filesystem access | `taintline audit` | — |
+| Rug-pull detection: alert when a server's tools change | `taintline monitor`, `--config` for every server in a config | — |
+| List and scan the tools of a stdio or Streamable HTTP server | `taintline enumerate`, `scan`, `pin`, `diff` | — |
+| SARIF 2.1.0 and OCSF output, signed webhooks | `--sarif`, `taintline sarif`, `taintline ocsf`, `--notify-url` | upload to GitHub code scanning |
 | GitHub Action for audit and monitor | [action.yml](action.yml), [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md) | a run on GitHub |
-| Black-box test of a chat endpoint you're authorized to test | `dyepack blackbox` | a run on a real copilot |
+| Black-box test of a chat endpoint you're authorized to test | `taintline blackbox` | a run on a real copilot |
 | Check the oracle against human labels | `label-sheet`, `gate0`, `rescore` | 30 labels ([docs/oracle_validation.md](docs/oracle_validation.md)) |
-| Docker image, PyPI package, release workflow | `docker run --rm --network none dyepack`, [docs/RELEASE.md](docs/RELEASE.md) | first release |
+| Docker image, PyPI package, release workflow | `docker run --rm --network none taintline`, [docs/RELEASE.md](docs/RELEASE.md) | first release |
 
 **Not built:** frontier-model benchmarks (Claude, GPT, Gemini), a real browser MCP server
 (the browser lab is simulated), targets for agent frameworks (LangGraph, OpenAI Agents SDK,
@@ -72,15 +72,15 @@ ollama serve
 Terminal 3:
 ```bash
 # baseline: the agent doing its job, no attack. Expect 0 leaks.
-uv run dyepack live-run --server notes --command python --arg lab/servers/notes_server.py \
+uv run taintline live-run --server notes --command python --arg lab/servers/notes_server.py \
   --collaborator http://localhost:8099 --agent ollama --model llama3.1:latest -n 5 --inject none --out out/baseline
 
 # positive control: a gullible prompt. Expect leaks; proves the pipeline can see them.
-uv run dyepack live-run --server notes --command python --arg lab/servers/notes_server.py \
+uv run taintline live-run --server notes --command python --arg lab/servers/notes_server.py \
   --collaborator http://localhost:8099 --agent ollama --model llama3.1:latest -n 10 --gullible --out out/control
 
 # the full suite: every attack x every task, report in out/live_suite/report.md
-uv run dyepack live-suite --server notes --command python --arg lab/servers/notes_server.py \
+uv run taintline live-suite --server notes --command python --arg lab/servers/notes_server.py \
   --collaborator http://localhost:8099 --agent ollama --model llama3.1:latest -n 3
 ```
 
@@ -93,7 +93,7 @@ uv run dyepack live-suite --server notes --command python --arg lab/servers/note
 
 ## Watch a real MCP server for tampering
 ```bash
-uv run dyepack monitor --server notes --command python --arg lab/servers/notes_server.py
+uv run taintline monitor --server notes --command python --arg lab/servers/notes_server.py
 # first run writes pins.json; later runs exit 1 and list any tool whose definition changed
 ```
 

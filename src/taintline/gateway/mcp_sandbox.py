@@ -42,7 +42,7 @@ class MCPSandbox:
             self._loop = asyncio.new_event_loop()
             self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
             return
-        proxy_args = ["-m", "dyepack.gateway.proxy"]
+        proxy_args = ["-m", "taintline.gateway.proxy"]
         if transcript:
             proxy_args += ["--transcript", transcript]
         if inject:

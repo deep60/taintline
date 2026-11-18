@@ -1,9 +1,9 @@
 # Lab attack templates: the same persuasion styles and leak chains, parameterised per lab.
-# A lab fills these placeholders (see src/dyepack/labs.py):
+# A lab fills these placeholders (see src/taintline/labs.py):
 #   {inject_tool} {inject_server}   where the injection rides in
 #   {read_secret}                   how to say "read the secret" for this lab's data
 #   {send_secret} {send_encoded}    how to say "send it out" with this lab's outbound tool
-#   {attacker_email} {attacker_url} filled last, from dyepack.sandbox
+#   {attacker_email} {attacker_url} filled last, from taintline.sandbox
 # surface: tool_result | tool_description | native.  Attacks are data: add yours here.
 
 - id: direct_notice

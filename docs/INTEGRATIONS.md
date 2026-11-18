@@ -4,7 +4,7 @@ Local CLI features, in the same family as SARIF output. They need no server and 
 
 ## Framework tags
 Every finding rule maps to OWASP Top 10 for LLM Applications (2025), MITRE ATLAS and NIST SP 800-53 Rev. 5
-identifiers (`src/dyepack/report/frameworks.py`). They appear as SARIF rule tags, in OCSF
+identifiers (`src/taintline/report/frameworks.py`). They appear as SARIF rule tags, in OCSF
 `finding_info.types`, in webhook payloads and in a "Framework mapping" table in the live-suite report.
 
 | finding | OWASP LLM | ATLAS | NIST 800-53 |
@@ -18,13 +18,13 @@ identifiers (`src/dyepack/report/frameworks.py`). They appear as SARIF rule tags
 
 These are mapping aids, not compliance results. The identifiers were written from memory; re-check ATLAS
 in particular against the current catalog before quoting them in an audit. PCI-DSS, HIPAA and SOC 2 are
-deliberately not mapped: they govern host file-integrity monitoring, which dyepack does not do.
+deliberately not mapped: they govern host file-integrity monitoring, which taintline does not do.
 
 ## OCSF export
 ```bash
-uv run dyepack monitor --server notes --command python --arg lab/servers/notes_server.py --ocsf out/drift.ndjson
-uv run dyepack live-suite --lab notes ... --ocsf out/findings.json
-uv run dyepack ocsf --live out/live_suite/results.json --out out/findings.ndjson   # from saved results
+uv run taintline monitor --server notes --command python --arg lab/servers/notes_server.py --ocsf out/drift.ndjson
+uv run taintline live-suite --lab notes ... --ocsf out/findings.json
+uv run taintline ocsf --live out/live_suite/results.json --out out/findings.ndjson   # from saved results
 ```
 Each finding is one OCSF 1.1.0 **Detection Finding** (class 2004, category Findings). `.ndjson`/`.jsonl`
 paths write one event per line, anything else a JSON array. `finding_info.uid` is stable across runs, so a
@@ -35,17 +35,17 @@ output yet. There is no OTLP exporter; deliver files with your own shipper or us
 
 ## Signed webhooks
 ```bash
-export DYEPACK_WEBHOOK_SECRET=...        # signing secret; never pass it on the command line
-uv run dyepack monitor --server notes --command python --arg lab/servers/notes_server.py \
-  --notify-url https://hooks.example.com/dyepack
+export TAINTLINE_WEBHOOK_SECRET=...        # signing secret; never pass it on the command line
+uv run taintline monitor --server notes --command python --arg lab/servers/notes_server.py \
+  --notify-url https://hooks.example.com/taintline
 ```
 Add the receiver's `host[:port]` to `SCOPE.yaml` `servers` first; an unlisted destination is refused. Events:
 `drift`, `leak` (a canary reached the sink) and `invalid_run`. Nothing is sent when there is nothing to
 report. `--notify-dry-run` builds and signs without sending.
 
-Each request has `X-Dyepack-Timestamp`, `X-Dyepack-Event` and
-`X-Dyepack-Signature: sha256=<hex>`, an HMAC-SHA256 of `"<timestamp>.<raw body>"`. Receivers verify with
-`dyepack.notify.verify(body, headers, secret)` (rejects a bad signature or a timestamp older than 5 minutes).
+Each request has `X-Taintline-Timestamp`, `X-Taintline-Event` and
+`X-Taintline-Signature: sha256=<hex>`, an HMAC-SHA256 of `"<timestamp>.<raw body>"`. Receivers verify with
+`taintline.notify.verify(body, headers, secret)` (rejects a bad signature or a timestamp older than 5 minutes).
 
 Behavior: https only (plain http is allowed for localhost), redirects are not followed, 5xx and network errors
 are retried twice, 4xx is not. A delivery failure prints a warning and never changes the command's exit code

@@ -1,6 +1,6 @@
 # A shadowed tool copies every email, and the agent's log looks perfect
 
-*Dyepack findings #2. Every number on this page is generated from run data by
+*Taintline findings #2. Every number on this page is generated from run data by
 `scripts/build_findings.py`, not typed by hand.*
 
 **Short version:** connect two MCP servers that both offer a tool called `send_email`, and the later
@@ -51,7 +51,7 @@ invoices, customer data, password reset links.
 - **No prompt defence helps.** There was no injected text. The model followed the user exactly. The
   only bad actor is the code behind the tool name.
 - **Logs and traces don't show it.** Any monitor that reads the agent's tool calls sees the right
-  recipient every time. In these runs, only the attacker's server knew. Dyepack catches it because it
+  recipient every time. In these runs, only the attacker's server knew. Taintline catches it because it
   watches a sink the attacker would have to reach, not the agent's own account of what happened.
 - **The collision itself is easy to miss.** Nothing in the trace marks that `send_email` came from a
   different server than you expected. Check whether your client warns you when two servers offer
@@ -59,10 +59,10 @@ invoices, customer data, password reset links.
 
 ## What to do about it
 
-- Look for repeated tool names across all your connected servers. `dyepack scan` flags a
+- Look for repeated tool names across all your connected servers. `taintline scan` flags a
   `duplicate_tool_name (shadowing risk)` when you give it one manifest that lists the tools of
   every server together. A one-command check of a whole client config is on the roadmap.
-- Pin tool definitions (`dyepack pin`), then use `dyepack monitor` to alert when a server's tools
+- Pin tool definitions (`taintline pin`), then use `taintline monitor` to alert when a server's tools
   change after you reviewed them.
 - Give the agent the narrowest set of servers its task needs. Every extra server can claim any tool
   name.
@@ -73,7 +73,7 @@ invoices, customer data, password reset links.
 - The shadow server is a lab server written to do this. The finding is about the **mechanism**, and
   it doesn't depend on the model: any model calling `send_email` would have triggered it. That's
   also why we ran only 15 trials. The rate is a property of the server, not of the model.
-- Which server wins a name collision depends on the client. In Dyepack's sandbox the later server
+- Which server wins a name collision depends on the client. In Taintline's sandbox the later server
   wins. Check what your client does.
 
 ## Runs
@@ -86,6 +86,6 @@ invoices, customer data, password reset links.
 Reproduce (LM Studio on port 1234, model loaded, host in SCOPE.yaml):
 
 ```bash
-dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab shadow+inbox -n 5 --out out/rs_shadow
+taintline live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab shadow+inbox -n 5 --out out/rs_shadow
 ```
 <!-- /tw:shadow_runs -->

@@ -1,4 +1,4 @@
-"""Map dyepack finding rules to external risk frameworks, so a finding can be filed under the
+"""Map taintline finding rules to external risk frameworks, so a finding can be filed under the
 control a reviewer already tracks.
 
 These are MAPPING AIDS, not compliance claims: a finding tagged `NIST-800-53:SI-7` means "this is the
@@ -8,7 +8,7 @@ ATLAS, NIST SP 800-53 Rev. 5). ATLAS in particular renumbers: re-check them agai
 catalog before putting them in an audit document.
 
 Deliberately absent: PCI-DSS, HIPAA and SOC 2. Those control file-integrity monitoring on hosts, and
-dyepack does not watch hosts.
+taintline does not watch hosts.
 """
 from __future__ import annotations
 

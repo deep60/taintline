@@ -1,9 +1,9 @@
 import httpx
 import pytest
 
-from dyepack.cli import main
-from dyepack.targets.http_retry import ModelRequestFailed, post_json
-from dyepack.targets.preflight import EndpointUnavailable, check_endpoint
+from taintline.cli import main
+from taintline.targets.http_retry import ModelRequestFailed, post_json
+from taintline.targets.preflight import EndpointUnavailable, check_endpoint
 
 
 class Resp:

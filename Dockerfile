@@ -1,6 +1,6 @@
-# Dyepack in a container. Default command: the one-minute demo, which needs no network at all:
-#   docker build -t dyepack .
-#   docker run --rm --network none dyepack
+# Taintline in a container. Default command: the one-minute demo, which needs no network at all:
+#   docker build -t taintline .
+#   docker run --rm --network none taintline
 # See docs/DOCKER.md for running against a model on your machine.
 FROM python:3.12-slim
 
@@ -23,9 +23,9 @@ COPY lab ./lab
 RUN uv sync --frozen --no-dev
 
 # never run as root; results go to /app/out (mount a folder there to keep them)
-RUN useradd --create-home --uid 10001 dyepack && mkdir -p /app/out && chown dyepack /app/out
-USER dyepack
+RUN useradd --create-home --uid 10001 taintline && mkdir -p /app/out && chown taintline /app/out
+USER taintline
 VOLUME ["/app/out"]
 
-ENTRYPOINT ["dyepack"]
+ENTRYPOINT ["taintline"]
 CMD ["demo"]

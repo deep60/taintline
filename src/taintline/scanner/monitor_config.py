@@ -1,4 +1,4 @@
-"""`dyepack monitor --config FILE`: rug-pull check for every server in an MCP client config.
+"""`taintline monitor --config FILE`: rug-pull check for every server in an MCP client config.
 
 For each server: start it (stdio) or call it (HTTP), list its tools, and compare against its pin file in
 `pins_dir`. The first run writes the baselines. Every server must be authorized in SCOPE.yaml, because

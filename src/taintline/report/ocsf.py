@@ -1,8 +1,8 @@
-"""OCSF (Open Cybersecurity Schema Framework) output, so dyepack findings can be loaded by tools that
+"""OCSF (Open Cybersecurity Schema Framework) output, so taintline findings can be loaded by tools that
 ingest OCSF (security data lakes, SIEM pipelines) without a custom parser.
 
 Each finding becomes one *Detection Finding* event (class_uid 2004, category 2 "Findings"). The
-file-integrity-style classes are not used: dyepack reports on MCP tools and agent behavior, not on
+file-integrity-style classes are not used: taintline reports on MCP tools and agent behavior, not on
 files. Frameworks (OWASP LLM, MITRE ATLAS, NIST 800-53) ride in `finding_info.types` and
 `unmapped.frameworks`.
 
@@ -47,7 +47,7 @@ def to_ocsf(findings: list[Finding], version: str = "0.1.0", now_ms: int | None 
             "time": now,
             "message": f.message,
             "metadata": {"version": OCSF_VERSION,
-                         "product": {"name": "dyepack", "vendor_name": "dyepack", "version": version}},
+                         "product": {"name": "taintline", "vendor_name": "taintline", "version": version}},
             "finding_info": {"uid": fingerprint(f), "title": title, "desc": desc,
                              "types": [f.rule, *flat(f.rule)]},
             "resources": [{"type": "MCP tool" if f.tool else "MCP server", "name": f.tool or f.server or "run",

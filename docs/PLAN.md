@@ -1,4 +1,4 @@
-# Dyepack — Product Analysis & Startup Plan
+# Taintline — Product Analysis & Startup Plan
 
 **Date:** 27 Oct 2026
 **Status:** pre-product / credible research prototype
@@ -88,7 +88,7 @@ server vendors. Fund the first 6 months with fixed-scope assessments.
 
 | # | Issue | Where |
 |---|---|---|
-| 7 | No `[project.scripts]` entry point, so no `dyepack` command | `pyproject.toml` |
+| 7 | No `[project.scripts]` entry point, so no `taintline` command | `pyproject.toml` |
 | 8 | No PyPI release, Docker image, or release CI | `.github/` |
 | 9 | `THREAT_MODEL.md` is 0 bytes | root |
 | 10 | README is stale vs. actual runs | `README.md` |
@@ -159,7 +159,7 @@ here.
 
 ### 2.4 Naming
 
-**Done (2026-11-17): renamed to Dyepack.** Originally: **rename before launch.** "Tripwire" collides with a well-known security brand. You need:
+**Done: renamed to Dyepack (2026-11-17), then to Taintline (2026-11-18), because DYEPACK is a known APT38 malware family.** Originally: **rename before launch.** "Tripwire" collides with a well-known security brand. You need:
 - a `.com` or `.dev` you can actually buy,
 - a USPTO/EUIPO check in class 9/42,
 - a GitHub org, PyPI name, and npm name,
@@ -259,7 +259,7 @@ Do not build the cloud before 5 design partners are running the CLI weekly.
 
 ```
                     ┌──────────────────────────────┐
-  agent / client ──▶│  MCP logging proxy (dyepack) │──▶ real MCP server
+  agent / client ──▶│  MCP logging proxy (taintline) │──▶ real MCP server
                     │  • records JSON-RPC           │
                     │  • injects payloads           │
                     │  • enforces scope gate        │
@@ -297,13 +297,13 @@ Goal: make the repo honest, safe, and shippable as v0.1.
 - [ ] Add `temperature=0` (where supported), `seed`, and a `--budget` token cap.
 - [ ] Version the results schema (`schema_version`) and add a migration note.
 - [ ] Update README to match reality; add "Status / not yet supported" matrix.
-- [ ] Add `[project.scripts] dyepack = "dyepack.cli:main"`.
+- [ ] Add `[project.scripts] taintline = "taintline.cli:main"`.
 - [ ] Add `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`.
 - [ ] Enable branch protection + required CI (ruff, pytest, pre-commit).
 - [ ] Re-run Gate G0 on one real model and record the result in
       `docs/oracle_validation.md`.
 
-**Exit criteria:** `dyepack run` against a real local MCP server, scope-gated, canary
+**Exit criteria:** `taintline run` against a real local MCP server, scope-gated, canary
 proven at the collaborator, G0 passed, clean install from a fresh venv.
 
 ### 5.3 Phase 1 — Real MCP engine (weeks 2–4)
@@ -337,14 +337,14 @@ proxy, prove canary arrival at the sink, produce a report. Demo video recorded.
       - encoded variants (base64, homoglyph, zero-width, RTL, markdown image exfil)
       - SSRF, path traversal, confused deputy, token passthrough (authorized only)
       - multi-turn / split payload
-- [ ] Attack contribution format + validator (`dyepack attacks validate`), so the
+- [ ] Attack contribution format + validator (`taintline attacks validate`), so the
       community can add attacks without touching code.
 - [ ] Oracle validation v2: 200+ human-labeled traces, report precision/recall/F1,
       publish the number. This is a marketing asset.
 - [ ] Determinism suite: same seed + same model → same verdict within tolerance.
 - [ ] Parallel trials with a worker pool; per-run cost estimate.
 - [ ] SARIF 2.1.0 output + `--fail-above` semantics documented.
-- [ ] GitHub Action (`dyepack/scan-action@v1`) with PR annotations and baseline diff.
+- [ ] GitHub Action (`taintline/scan-action@v1`) with PR annotations and baseline diff.
 - [ ] Benchmark v0: 5 models × 50 attacks, published with methodology + raw data.
 
 **Exit criteria:** benchmark report published; SARIF accepted by GitHub code scanning;

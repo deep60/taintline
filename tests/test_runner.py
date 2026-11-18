@@ -1,9 +1,9 @@
-from dyepack.attacks import load_attacks
-from dyepack.attacks.runner import run_suite
-from dyepack.sandbox import BASE_TOOLS
-from dyepack.scoring import score, wilson
-from dyepack.targets import MockAgent
-from dyepack.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.attacks.runner import run_suite
+from taintline.sandbox import BASE_TOOLS
+from taintline.scoring import score, wilson
+from taintline.targets import MockAgent
+from taintline.tasks import TASKS
 
 
 def test_wilson_bounds():

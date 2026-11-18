@@ -6,7 +6,7 @@
   "temperature": 0.6,
   "seed_fixed": true
  },
- "command": "dyepack live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab shadow+inbox -n 5 --out out/rs_shadow",
+ "command": "taintline live-suite --agent openai-compat --base-url http://localhost:1234/v1 --temperature 0.6 --fix-seed --model redsage-qwen3-8b-ins --lab shadow+inbox -n 5 --out out/rs_shadow",
  "summary": {
   "headline": 37.5,
   "baseline_utility": 1.0,

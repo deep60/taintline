@@ -31,7 +31,7 @@ LIVE_ATTACKS = Path(__file__).parent / "attacks" / "live"
 
 
 def _config() -> dict:
-    p = Path("dyepack.yaml")
+    p = Path("taintline.yaml")
     return (yaml.safe_load(p.read_text()) or {}) if p.exists() else {}
 
 
@@ -104,9 +104,9 @@ def _list_tools(gate, a) -> list[dict]:
 
 def main(argv=None):
     cfg = _config()
-    ap = argparse.ArgumentParser(prog="dyepack")
+    ap = argparse.ArgumentParser(prog="taintline")
     from . import __version__
-    ap.add_argument("--version", action="version", version=f"dyepack {__version__}")
+    ap.add_argument("--version", action="version", version=f"taintline {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="dynamic attack run against an agent")
@@ -163,7 +163,7 @@ def main(argv=None):
     mo.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
     mo.add_argument("--ocsf", help="also write OCSF 1.1 Detection Finding events here (.json or .ndjson)")
     mo.add_argument("--notify-url", help="POST a signed webhook here on drift, leak or invalid run")
-    mo.add_argument("--notify-secret-env", default="DYEPACK_WEBHOOK_SECRET",
+    mo.add_argument("--notify-secret-env", default="TAINTLINE_WEBHOOK_SECRET",
                     help="name of the env var holding the HMAC signing secret")
     mo.add_argument("--notify-dry-run", action="store_true", help="build and sign, do not send")
     mo.add_argument("--pins", default="pins.json", help="pin file; created as the baseline if missing")
@@ -216,7 +216,7 @@ def main(argv=None):
 
     ls2 = sub.add_parser("live-suite", help="all live attacks x all live tasks vs a real stdio MCP server")
     for flag, kw in [("--server", dict()), ("--command", dict()),
-                     ("--lab", dict(help="a lab from `dyepack labs` (servers, tasks and attacks included)")),
+                     ("--lab", dict(help="a lab from `taintline labs` (servers, tasks and attacks included)")),
                      ("--collaborator", dict(default="http://127.0.0.1:8099")),
                      ("--attacks", dict(help="YAML file/dir (default: bundled lab/notes attacks)")),
                      ("--mutators", dict(default="", help="comma list, e.g. base64,homoglyph")),
@@ -247,7 +247,7 @@ def main(argv=None):
     ls2.add_argument("--artifact", default="mcp-config.json", help="file SARIF results are anchored to")
     ls2.add_argument("--ocsf", help="also write OCSF 1.1 Detection Finding events here (.json or .ndjson)")
     ls2.add_argument("--notify-url", help="POST a signed webhook here on drift, leak or invalid run")
-    ls2.add_argument("--notify-secret-env", default="DYEPACK_WEBHOOK_SECRET",
+    ls2.add_argument("--notify-secret-env", default="TAINTLINE_WEBHOOK_SECRET",
                     help="name of the env var holding the HMAC signing secret")
     ls2.add_argument("--notify-dry-run", action="store_true", help="build and sign, do not send")
 

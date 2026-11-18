@@ -27,5 +27,5 @@ Which real deployments look like this lab, and what a defender should do.
 
 ## Reproduce
 ```bash
-dyepack live-suite --lab <lab> --attacks <file> -n <n> --agent ... --model ... --out out/<run>
+taintline live-suite --lab <lab> --attacks <file> -n <n> --agent ... --model ... --out out/<run>
 ```

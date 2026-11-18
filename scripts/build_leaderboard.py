@@ -18,8 +18,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from dyepack.report.charts import bar_chart  # noqa: E402
-from dyepack.scoring.asr import wilson  # noqa: E402
+from taintline.report.charts import bar_chart  # noqa: E402
+from taintline.scoring.asr import wilson  # noqa: E402
 
 DATA = ROOT / "docs" / "findings" / "data"
 OUT = ROOT / "docs" / "leaderboard"

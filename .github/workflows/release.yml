@@ -29,7 +29,7 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/dyepack/__init__.py)
+          version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/taintline/__init__.py)
           test "v$version" = "$TAG" || { echo "::error::tag $TAG does not match version $version"; exit 1; }
       - run: uv build
       - name: Smoke-test the wheel outside the checkout
@@ -37,8 +37,8 @@ jobs:
           uv venv /tmp/wheel-venv --python 3.12
           VIRTUAL_ENV=/tmp/wheel-venv uv pip install dist/*.whl
           cd /tmp
-          /tmp/wheel-venv/bin/dyepack --version
-          /tmp/wheel-venv/bin/dyepack demo --out /tmp/demo-out
+          /tmp/wheel-venv/bin/taintline --version
+          /tmp/wheel-venv/bin/taintline demo --out /tmp/demo-out
           test -s /tmp/demo-out/replay.html
       - uses: actions/upload-artifact@v4
         with:

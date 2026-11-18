@@ -1,5 +1,5 @@
 [project]
-name = "dyepack"
+name = "taintline"
 dynamic = ["version"]
 description = "Red team for AI agents and MCP tool integrations: leaks proven at a sink, not judged by an LLM"
 readme = "README.md"
@@ -23,13 +23,13 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/deep60/dyepack"
-Source = "https://github.com/deep60/dyepack"
-Issues = "https://github.com/deep60/dyepack/issues"
-Changelog = "https://github.com/deep60/dyepack/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/deep60/taintline"
+Source = "https://github.com/deep60/taintline"
+Issues = "https://github.com/deep60/taintline/issues"
+Changelog = "https://github.com/deep60/taintline/blob/main/CHANGELOG.md"
 
 [project.scripts]
-dyepack = "dyepack.cli:main"
+taintline = "taintline.cli:main"
 
 [dependency-groups]
 dev = ["pytest", "ruff"]
@@ -39,16 +39,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "src/dyepack/__init__.py"
+path = "src/taintline/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/dyepack"]
+packages = ["src/taintline"]
 exclude = ["**/__pycache__", "**/*.pyc"]
 
-# the lab servers ship inside the wheel so `dyepack demo` and `--lab` work without a checkout
+# the lab servers ship inside the wheel so `taintline demo` and `--lab` work without a checkout
 [tool.hatch.build.targets.wheel.force-include]
-"lab/servers" = "dyepack/_lab/servers"
-"lab/collaborator/server.py" = "dyepack/_lab/collaborator/server.py"
+"lab/servers" = "taintline/_lab/servers"
+"lab/collaborator/server.py" = "taintline/_lab/collaborator/server.py"
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/lab/servers", "/lab/collaborator", "/tests", "/README.md", "/LICENSE", "/CHANGELOG.md"]

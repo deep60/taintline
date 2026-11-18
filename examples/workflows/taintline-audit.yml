@@ -1,7 +1,7 @@
 # Copy to .github/workflows/ in a repo that commits MCP client configs (.mcp.json, .vscode/mcp.json,
 # .cursor/mcp.json). Findings appear as code scanning alerts on the config file's own line, and on the
 # pull request diff. Starts no server and needs no tokens or scope file.
-name: dyepack-audit
+name: taintline-audit
 on:
   pull_request:
     paths: [".mcp.json", ".vscode/mcp.json", ".cursor/mcp.json", "mcp.json"]
@@ -16,6 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: deep60/dyepack@main     # pin to a release tag or commit SHA once one exists
+      - uses: deep60/taintline@main     # pin to a release tag or commit SHA once one exists
         with:
           fail-on: high              # high | medium | low | never

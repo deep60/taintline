@@ -42,22 +42,22 @@ Why first: every later number depends on it.
    delayed payload (injection arrives in turn 2), split payload, shadowed tool names.
 5. **Mutators on the live path** (base64, homoglyph, zero-width) with the oracle's encoded-leak gap closed
    (decode before matching; known gap in `docs/oracle_validation.md`).
-6. **Attack validator:** `dyepack attacks validate` so contributors add YAML without code.
+6. **Attack validator:** `taintline attacks validate` so contributors add YAML without code.
 
 **Exit:** 40+ attack/task pairs run live; coverage table in the report; no false alarms on baseline.
 
 ### M2 status (2026-10-30)
 Built and tested (157 tests green):
-- **Labs** (`dyepack labs`): 6 labs, 18 tasks, stdio servers in `lab/servers/` (`files`, `inbox`, `web`,
+- **Labs** (`taintline labs`): 6 labs, 18 tasks, stdio servers in `lab/servers/` (`files`, `inbox`, `web`,
   `db`, `poisoned`, plus `notes`). Two are cross-server (`files+inbox`, `db+web`: read on A, exfiltrate via B),
   one pairs a deliberately poisoned server with a mailbox (`poisoned+inbox`, clean twin via `POISON=0` for the baseline).
 - **Attack library on the live path**: `attacks/templates/generic.yaml` is filled per lab (10-11 attacks per lab:
   6 persuasion styles, tool-description poisoning, base64 and hex chains, delayed payload, split payload).
-  Run with `dyepack live-suite --lab NAME`; `--mutators` still applies.
+  Run with `taintline live-suite --lab NAME`; `--mutators` still applies.
 - **Chains**: multi-step (read, transform, send), cross-server, delayed (`after: N`), split (`parts: [...]`).
 - **Encoded-leak detection**: the oracle and the sink match base64, hex, URL-encoding, ROT13, reversal,
   zero-width and separator-padded canaries; closes the known gap in `docs/oracle_validation.md`.
-- **Attack validator**: `dyepack attacks validate [PATH] [--lab NAME]`.
+- **Attack validator**: `taintline attacks validate [PATH] [--lab NAME]`.
 - **`fired` column**: reports whether the injection was actually planted, so a delayed or split payload
   on a task that calls the tool once is flagged instead of read as "secure".
 
@@ -100,7 +100,7 @@ the wild (the malicious variant is the lab `rugpull` server), no OAuth for remot
 ### M4 status (2026-10-31)
 Built and tested (188 tests): `schema_version` + `kind` on every results file with a compatibility rule
 (`docs/SCHEMA.md`); SARIF 2.1.0 from scan, drift and live-suite results with stable fingerprints and a
-structural validator; `--sarif` on `enumerate`, `monitor`, `live-suite` plus `dyepack sarif`;
+structural validator; `--sarif` on `enumerate`, `monitor`, `live-suite` plus `taintline sarif`;
 `live-suite --fail-above` (exit 1 over threshold, exit 3 for an invalid run); budgets (`--max-trials`,
 `--max-minutes`, `--max-tokens`, `--dry-run`); a coverage table (attack family x surface) and an INVALID banner
 in the live-suite report. See `docs/CI.md`.
@@ -127,7 +127,7 @@ Cheap route: a browser agent is an agent with a browser **MCP server** (e.g. Pla
 test proves a non-lab URL gets a 404). Attack surface `page`: the payload is rendered into the page markup at
 `PAGE_VECTOR` = visible_text (control), css_hidden, offscreen, white_on_white, html_comment, alt_text,
 aria_label, form_field, hidden_input; exfil channels are link-following, image-style URL, auto-submitted form
-and cookie/localStorage. 10 attacks in `src/dyepack/attacks/browser/browser.yaml`, 3 tasks + clean baseline.
+and cookie/localStorage. 10 attacks in `src/taintline/attacks/browser/browser.yaml`, 3 tasks + clean baseline.
 `BROWSER_VIEW=a11y` (default) models an accessibility snapshot (hidden CSS and comments never reach the model;
 such pairs show as UNFIRED, not secure); `BROWSER_VIEW=dom` shows everything. The oracle now treats
 `submit_form` and navigation to a non-`acme.example` host as outbound.
@@ -148,7 +148,7 @@ the oracle says "no leak" and only the sink shows contact; a disagreement on thi
 
 **Exit:** one authorized copilot tested, with a written scope and a report the owner accepts.
 
-**Status (tooling built, exit check NOT met).** `dyepack blackbox` + `targets/blackbox_http.py`: scope-gated
+**Status (tooling built, exit check NOT met).** `taintline blackbox` + `targets/blackbox_http.py`: scope-gated
 chat-endpoint target driven by a YAML config (tokens via `${ENV}`), injection channel = document planting
 (API or `--manual`), sink-confirmed results in the live-suite format, request budget, dry run. Validated only
 against the local `mock_copilot.py`. See `docs/BLACKBOX.md`. Needs a design partner with written authorization.

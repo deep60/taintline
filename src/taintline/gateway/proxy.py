@@ -4,7 +4,7 @@ JSON-RPC message, hashes the tool list, and can plant an injection.
 MCP's stdio transport is newline-delimited JSON, so the proxy relays lines and only parses
 what it needs. Run as a module:
 
-    python -m dyepack.gateway.proxy --transcript t.jsonl [--inject-json '{...}'] -- CMD ARGS...
+    python -m taintline.gateway.proxy --transcript t.jsonl [--inject-json '{...}'] -- CMD ARGS...
 
 Injection spec: {"surface": "tool_description" | "tool_result", "target_tool": name, "payload": text}
 Optional, tool_result only: "after": N skips the first N calls of the target tool (delayed payload);
@@ -141,9 +141,9 @@ def run_proxy(cmd: list[str], transcript: str | None = None, inject: dict | None
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--" not in argv:
-        raise SystemExit("usage: python -m dyepack.gateway.proxy [options] -- SERVER_CMD [ARGS...]")
+        raise SystemExit("usage: python -m taintline.gateway.proxy [options] -- SERVER_CMD [ARGS...]")
     i = argv.index("--")
-    ap = argparse.ArgumentParser(prog="dyepack-proxy")
+    ap = argparse.ArgumentParser(prog="taintline-proxy")
     ap.add_argument("--transcript")
     ap.add_argument("--inject-json", help="injection spec as JSON")
     a = ap.parse_args(argv[:i])

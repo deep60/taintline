@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from dyepack.gateway.hash import hash_tools
-from dyepack.gateway.mcp_sandbox import MCPSandbox
-from dyepack.gateway.proxy_http import HttpProxy
-from dyepack.scanner.enumerate import enumerate_url
-from dyepack.scanner.rugpull import check, pin
-from dyepack.scope import Gate, OutOfScope, parse_scope
+from taintline.gateway.hash import hash_tools
+from taintline.gateway.mcp_sandbox import MCPSandbox
+from taintline.gateway.proxy_http import HttpProxy
+from taintline.scanner.enumerate import enumerate_url
+from taintline.scanner.rugpull import check, pin
+from taintline.scope import Gate, OutOfScope, parse_scope
 
 SERVERS = Path(__file__).parent.parent / "lab" / "servers"
 

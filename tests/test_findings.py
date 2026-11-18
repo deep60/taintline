@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from dyepack.report.charts import bar_chart
+from taintline.report.charts import bar_chart
 
 ROOT = Path(__file__).resolve().parents[1]
 

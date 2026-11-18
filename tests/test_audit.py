@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from dyepack.cli import main
-from dyepack.report.sarif import from_audit, to_sarif, validate_sarif
-from dyepack.scanner.config_audit import _pin_state, audit, audit_file, check_server, discover, strip_jsonc
-from dyepack.scanner.monitor_config import MissingEnv, exit_code, monitor_config, resolve
-from dyepack.scope import Gate, OutOfScope, parse_scope
+from taintline.cli import main
+from taintline.report.sarif import from_audit, to_sarif, validate_sarif
+from taintline.scanner.config_audit import _pin_state, audit, audit_file, check_server, discover, strip_jsonc
+from taintline.scanner.monitor_config import MissingEnv, exit_code, monitor_config, resolve
+from taintline.scope import Gate, OutOfScope, parse_scope
 
 # built at runtime so no token-shaped literal lives in the repo
 GH = "gh" + "p_" + "A1b2C3d4" * 5

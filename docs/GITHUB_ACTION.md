@@ -1,11 +1,11 @@
-# Dyepack in GitHub: config audit and rug-pull monitor
+# Taintline in GitHub: config audit and rug-pull monitor
 
 > **Status:** the commands below are tested locally. The action has **not run on GitHub yet**.
 > `.github/workflows/action-selftest.yml` will run it once this repo is pushed.
 
 ## 1. Audit MCP configs on every pull request
 
-`dyepack audit` reads MCP client configs and checks every server entry. It starts nothing and
+`taintline audit` reads MCP client configs and checks every server entry. It starts nothing and
 needs no scope file:
 
 | finding | severity | what it means |
@@ -26,30 +26,30 @@ On your machine, with no arguments, it finds the per-user configs (Claude Deskto
 Cursor, VS Code, Windsurf) and the project files in the current folder:
 
 ```bash
-dyepack audit
-dyepack audit --no-user --sarif dyepack.sarif   # project files only, as CI does
+taintline audit
+taintline audit --no-user --sarif taintline.sarif   # project files only, as CI does
 ```
 
-In a repository, copy [examples/workflows/dyepack-audit.yml](../examples/workflows/dyepack-audit.yml)
+In a repository, copy [examples/workflows/taintline-audit.yml](../examples/workflows/taintline-audit.yml)
 to `.github/workflows/`. Findings show up in the code scanning tab and on the pull request, **on the
 config file's own line**.
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: deep60/dyepack@main      # pin a tag or SHA once released
+- uses: deep60/taintline@main      # pin a tag or SHA once released
   with:
     fail-on: high                 # high | medium | low | never
 ```
 
 ## 2. Watch servers for rug pulls on a schedule
 
-`dyepack monitor --config .mcp.json` starts each server in the config, lists its tools, and
+`taintline monitor --config .mcp.json` starts each server in the config, lists its tools, and
 compares them with one pin file per server:
 
 ```bash
-dyepack monitor --config .mcp.json --pins-dir .dyepack/pins            # first run: writes baselines
-dyepack monitor --config .mcp.json --pins-dir .dyepack/pins            # later: OK / DRIFT / UNCHECKED
-dyepack monitor --config .mcp.json --pins-dir .dyepack/pins --update   # accept a change you reviewed
+taintline monitor --config .mcp.json --pins-dir .taintline/pins            # first run: writes baselines
+taintline monitor --config .mcp.json --pins-dir .taintline/pins            # later: OK / DRIFT / UNCHECKED
+taintline monitor --config .mcp.json --pins-dir .taintline/pins --update   # accept a change you reviewed
 ```
 
 - Every server must be listed in `SCOPE.yaml`. Monitoring **starts** stdio servers and contacts
@@ -61,8 +61,8 @@ dyepack monitor --config .mcp.json --pins-dir .dyepack/pins --update   # accept 
   timeout, or a URL server that needs custom headers (not supported yet).
 - `--notify-url` sends a signed webhook on drift, as plain `monitor` does.
 
-For a daily job, use [examples/workflows/dyepack-monitor.yml](../examples/workflows/dyepack-monitor.yml).
-Commit `SCOPE.yaml` and the reviewed `.dyepack/pins/` first.
+For a daily job, use [examples/workflows/taintline-monitor.yml](../examples/workflows/taintline-monitor.yml).
+Commit `SCOPE.yaml` and the reviewed `.taintline/pins/` first.
 
 ## Exit codes
 
@@ -81,9 +81,9 @@ The action exposes this as the `exit-code` output and fails the job on 1 or 3.
 | `paths` | (discover) | audit: files to check, space separated |
 | `fail-on` | `high` | audit |
 | `config` | `.mcp.json` | monitor |
-| `pins-dir` | `.dyepack/pins` | monitor |
+| `pins-dir` | `.taintline/pins` | monitor |
 | `scope` | `SCOPE.yaml` | monitor |
-| `sarif-file` | `dyepack.sarif` | both |
+| `sarif-file` | `taintline.sarif` | both |
 | `upload-sarif` | `true` | both (needs `security-events: write`) |
 
 ## Limits

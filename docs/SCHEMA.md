@@ -4,7 +4,7 @@ Every `results.json` carries `schema_version` (currently `1.0`) and `kind` (`run
 
 - Same major version: readers keep working; new minor versions only add fields.
 - No `schema_version`: written before versioning; still readable (treated as 0.x).
-- Higher major version than the installed dyepack: refused with an "upgrade dyepack" message.
+- Higher major version than the installed taintline: refused with an "upgrade taintline" message.
 
 ## History
 - **1.0** (2026-10-31): first versioned format. `live_suite` adds `summary.valid` / `summary.invalid_reasons`,

@@ -5,7 +5,7 @@ version may change result formats (each results file carries its own `schema_ver
 
 ## [0.1.0] - unreleased
 
-First public release. (Developed as "Tripwire"; renamed before release.)
+First public release. (Developed as "Tripwire", briefly renamed "Dyepack"; renamed again before release.)
 
 ### Measure
 - Live suites against real MCP lab servers (8 labs, 24 tasks), with leaks proven only when a canary
@@ -21,16 +21,16 @@ First public release. (Developed as "Tripwire"; renamed before release.)
   trials (`--no-preflight` skips the check).
 
 ### See it
-- `dyepack demo`: watch a leak happen and get proven, with no model, key or network. Docker image
+- `taintline demo`: watch a leak happen and get proven, with no model, key or network. Docker image
   included.
 - `replay.html` for every run: where the injected text came in and where the secret left.
 - Findings write-ups and a leaderboard, all generated from committed run snapshots.
 
 ### Guard
-- `dyepack audit`: find MCP client configs (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf)
+- `taintline audit`: find MCP client configs (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf)
   and flag pasted secrets, plain http, unpinned server packages, broad filesystem access and
   auto-approved tools.
-- `dyepack monitor --config`: rug-pull detection for every server in a config.
+- `taintline monitor --config`: rug-pull detection for every server in a config.
 - GitHub Action for both, with SARIF on the config file's own line. OCSF export and signed webhooks.
 
 ### Contribute

@@ -1,10 +1,10 @@
 from types import SimpleNamespace as NS
 
-from dyepack.attacks import load_attacks
-from dyepack.attacks.runner import run_suite
-from dyepack.sandbox import Sandbox
-from dyepack.targets.own_agent import AgentTimeout, AnthropicAgent
-from dyepack.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.attacks.runner import run_suite
+from taintline.sandbox import Sandbox
+from taintline.targets.own_agent import AgentTimeout, AnthropicAgent
+from taintline.tasks import TASKS
 
 
 def tool_use(name="read_file", args=None):

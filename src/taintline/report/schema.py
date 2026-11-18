@@ -1,5 +1,5 @@
-"""Versioned result files. Every results.json written by dyepack carries `schema_version` and `kind`
-so a CI job or a later dyepack can tell what it is reading.
+"""Versioned result files. Every results.json written by taintline carries `schema_version` and `kind`
+so a CI job or a later taintline can tell what it is reading.
 
 Compatibility rule: a reader accepts the same MAJOR version (new minor versions only add fields) and
 files with no version at all (written before versioning, treated as 0.x). A higher MAJOR version is
@@ -32,8 +32,8 @@ def check_version(data: dict, where: str = "results file") -> str:
     except ValueError:
         raise SchemaError(f"{where}: unreadable schema_version {v!r}") from None
     if major > int(SCHEMA_VERSION.split(".")[0]):
-        raise SchemaError(f"{where} has schema_version {v}, newer than this dyepack understands "
-                          f"({SCHEMA_VERSION}). Upgrade dyepack.")
+        raise SchemaError(f"{where} has schema_version {v}, newer than this taintline understands "
+                          f"({SCHEMA_VERSION}). Upgrade taintline.")
     return v
 
 

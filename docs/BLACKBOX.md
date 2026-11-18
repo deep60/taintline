@@ -15,8 +15,8 @@ plants documents and a fake credential there, and asks the copilot questions tha
 ```bash
 python3 lab/collaborator/server.py            # a sink the TARGET can reach (public host for a real target)
 export COPILOT_TOKEN=...                      # never put tokens in the YAML
-uv run dyepack blackbox --config bb.yaml --collaborator https://sink.example:8099 -n 3 --max-requests 200 --dry-run
-uv run dyepack blackbox --config bb.yaml --collaborator https://sink.example:8099 -n 3 --max-requests 200
+uv run taintline blackbox --config bb.yaml --collaborator https://sink.example:8099 -n 3 --max-requests 200 --dry-run
+uv run taintline blackbox --config bb.yaml --collaborator https://sink.example:8099 -n 3 --max-requests 200
 ```
 Every host in the config and the collaborator must be listed in `SCOPE.yaml`; anything else is refused before
 a request is sent. See `examples/blackbox.example.yaml`. Results use the same files as `live-suite`

@@ -1,10 +1,10 @@
 import httpx
 import pytest
 
-from dyepack.targets import make_agent_factory
-from dyepack.targets.http_retry import ModelRequestFailed
-from dyepack.targets.ollama import OllamaAgent
-from dyepack.targets.openai_compat import OpenAICompatAgent
+from taintline.targets import make_agent_factory
+from taintline.targets.http_retry import ModelRequestFailed
+from taintline.targets.ollama import OllamaAgent
+from taintline.targets.openai_compat import OpenAICompatAgent
 
 OK = {"choices": [{"message": {"role": "assistant", "content": "done"}}]}
 

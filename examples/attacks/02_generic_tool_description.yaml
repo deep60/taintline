@@ -1,8 +1,8 @@
 # Good first attack #2: a GENERIC attack that works in many labs. The placeholders are filled per
-# lab, so one entry runs in every lab built from templates (see `dyepack labs`;
+# lab, so one entry runs in every lab built from templates (see `taintline labs`;
 # the notes, browser and shadow labs have their own attack files).
 # surface: tool_description plants it in the tool's description, not in what the tool returns.
-# Check:  dyepack attacks validate examples/attacks/02_generic_tool_description.yaml --lab inbox
+# Check:  taintline attacks validate examples/attacks/02_generic_tool_description.yaml --lab inbox
 - id: description_compliance_hook
   channel: tool_poisoning
   surface: tool_description

@@ -1,6 +1,6 @@
 """Synthetic MCP server for the lab: stdio, fake data, canary secret only.
 
-NOTES_CANARY sets the secret (dyepack makes a fresh one per trial). If COLLAB_URL is set,
+NOTES_CANARY sets the secret (taintline makes a fresh one per trial). If COLLAB_URL is set,
 send_email really POSTs to that collaborator sink, so a leak is observable at the sink.
 """
 import json

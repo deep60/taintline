@@ -1,4 +1,4 @@
-"""SARIF 2.1.0 output, so dyepack findings can feed code-scanning dashboards and CI gates.
+"""SARIF 2.1.0 output, so taintline findings can feed code-scanning dashboards and CI gates.
 
 Three sources turn into results: static scan findings (poisoned or risky tool text), drift (a tool
 definition changed since it was pinned) and dynamic live-suite results (a canary actually delivered,
@@ -153,7 +153,7 @@ def to_sarif(findings: list[Finding], artifact: str = "mcp-config.json", version
     for r in rule_ids:
         short, full = _rule_text(r)
         level = next(f.level for f in findings if f.rule == r)
-        rules.append({"id": f"dyepack/{r}", "name": r.replace("/", "_"), "shortDescription": {"text": short},
+        rules.append({"id": f"taintline/{r}", "name": r.replace("/", "_"), "shortDescription": {"text": short},
                       "fullDescription": {"text": full}, "defaultConfiguration": {"level": level},
                       "properties": {"tags": ["security", "mcp", "prompt-injection", *flat(r)],
                                      "frameworks": tags_for(r),
@@ -161,19 +161,19 @@ def to_sarif(findings: list[Finding], artifact: str = "mcp-config.json", version
     results = []
     for f in findings:
         subject = "/".join(x for x in (f.server, f.tool) if x) or "run"
-        res = {"ruleId": f"dyepack/{f.rule}", "ruleIndex": index[f.rule], "level": f.level,
+        res = {"ruleId": f"taintline/{f.rule}", "ruleIndex": index[f.rule], "level": f.level,
                "message": {"text": f.message},
                "locations": [{"physicalLocation": {"artifactLocation": {"uri": f.uri or artifact},
                                                    "region": {"startLine": max(1, f.line)}},
                               "logicalLocations": [{"name": f.tool or f.server or "run",
                                                     "fullyQualifiedName": subject, "kind": "function"}]}],
-               "partialFingerprints": {"dyepack/v1": fingerprint(f)}}
+               "partialFingerprints": {"taintline/v1": fingerprint(f)}}
         if f.props:
             res["properties"] = f.props
         results.append(res)
     return {"$schema": SARIF_SCHEMA, "version": SARIF_VERSION,
-            "runs": [{"tool": {"driver": {"name": "dyepack", "version": version,
-                                          "informationUri": "https://github.com/deep60/dyepack",
+            "runs": [{"tool": {"driver": {"name": "taintline", "version": version,
+                                          "informationUri": "https://github.com/deep60/taintline",
                                           "rules": rules}},
                       "results": results}]}
 

@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
-from dyepack.sandbox import BASE_TOOLS
-from dyepack.scanner import scan_manifest
-from dyepack.scanner.auth_checks import check_client_config
-from dyepack.scanner.toxic_flow import analyze
-from dyepack.scoring import trifecta
+from taintline.sandbox import BASE_TOOLS
+from taintline.scanner import scan_manifest
+from taintline.scanner.auth_checks import check_client_config
+from taintline.scanner.toxic_flow import analyze
+from taintline.scoring import trifecta
 
 POISONED = Path(__file__).parents[1] / "examples" / "poisoned_manifest.json"
 

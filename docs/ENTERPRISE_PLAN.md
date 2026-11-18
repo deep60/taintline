@@ -39,9 +39,9 @@ hidden-text finding exists in `docs/findings`.
 2. Rewrite the README's "What works today" section to match reality.
 3. Finish G0: label 30+ traces, run `gate0`, fill in `docs/oracle_validation.md`.
 4. Set up PyPI trusted publishing, tag `v0.1.0`, confirm the release workflow and the Action run on GitHub.
-5. Trademark and domain check for "Dyepack".
+5. Trademark and domain check for "Taintline".
 
-**Exit:** `uv tool install dyepack && dyepack demo` works on a clean machine.
+**Exit:** `uv tool install taintline && taintline demo` works on a clean machine.
 
 ## Phase 1: Credibility with enterprise buyers (weeks 2 to 6)
 1. **Frontier-model benchmark.** Run the suite on Claude, GPT and Gemini through their APIs and publish it.

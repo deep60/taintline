@@ -11,9 +11,9 @@ sys.path.insert(0, str(root / "lab" / "servers"))
 import mock_copilot  # noqa: E402
 from server import make_server  # noqa: E402
 
-from dyepack.blackbox import blackbox_attacks, blackbox_suite  # noqa: E402
-from dyepack.scope import Gate, OutOfScope, parse_scope  # noqa: E402
-from dyepack.targets.blackbox_http import BlackboxConfigError, load_config, parse_config  # noqa: E402
+from taintline.blackbox import blackbox_attacks, blackbox_suite  # noqa: E402
+from taintline.scope import Gate, OutOfScope, parse_scope  # noqa: E402
+from taintline.targets.blackbox_http import BlackboxConfigError, load_config, parse_config  # noqa: E402
 
 
 def _serve(srv):

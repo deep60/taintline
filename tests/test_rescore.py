@@ -1,11 +1,11 @@
 import json
 
-from dyepack.attacks import load_attacks
-from dyepack.attacks.runner import run_suite
-from dyepack.cli import main
-from dyepack.rescore import rescore
-from dyepack.targets import MockAgent
-from dyepack.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.attacks.runner import run_suite
+from taintline.cli import main
+from taintline.rescore import rescore
+from taintline.targets import MockAgent
+from taintline.tasks import TASKS
 
 
 class ChattyAgent:

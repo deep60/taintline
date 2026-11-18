@@ -1,7 +1,7 @@
 import pytest
 
-from dyepack.attacks import load_attacks
-from dyepack.tasks import TASKS
+from taintline.attacks import load_attacks
+from taintline.tasks import TASKS
 
 
 @pytest.fixture

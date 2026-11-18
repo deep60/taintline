@@ -1,5 +1,5 @@
 # Scheduled rug-pull monitor: every day, start each server in .mcp.json, list its tools, and compare
-# them with the pins committed in .dyepack/pins/. A changed description, schema or title fails the job
+# them with the pins committed in .taintline/pins/. A changed description, schema or title fails the job
 # and raises a code scanning alert. A server that cannot be checked also fails: unchecked is not a pass.
 #
 # Before enabling it:
@@ -7,10 +7,10 @@
 #      commit SCOPE.yaml. Monitoring STARTS these servers on the runner, so only list ones you trust
 #      enough to run there.
 #   2. Create the baselines locally and review them:
-#        dyepack monitor --config .mcp.json --pins-dir .dyepack/pins
-#   3. Commit .dyepack/pins/. After a change you have reviewed, accept it with --update and commit again.
+#        taintline monitor --config .mcp.json --pins-dir .taintline/pins
+#   3. Commit .taintline/pins/. After a change you have reviewed, accept it with --update and commit again.
 # Env vars a server needs (e.g. ${env:GITHUB_TOKEN}) come from repository secrets, mapped under `env:`.
-name: dyepack-monitor
+name: taintline-monitor
 on:
   schedule:
     - cron: "17 6 * * *"
@@ -25,10 +25,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4     # only if your servers run through npx
         with: { node-version: 22 }
-      - uses: deep60/dyepack@main      # pin to a release tag or commit SHA once one exists
+      - uses: deep60/taintline@main      # pin to a release tag or commit SHA once one exists
         with:
           command: monitor
           config: .mcp.json
-          pins-dir: .dyepack/pins
+          pins-dir: .taintline/pins
         env:
           GITHUB_TOKEN: ${{ secrets.MCP_GITHUB_TOKEN }}   # example: whatever your servers reference

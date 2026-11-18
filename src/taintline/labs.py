@@ -1,5 +1,5 @@
 """Labs: a lab is one or more synthetic stdio MCP servers plus the benign tasks and the attack
-templates that fit them. `dyepack live-suite --lab NAME` runs every attack against every task.
+templates that fit them. `taintline live-suite --lab NAME` runs every attack against every task.
 
 Cross-server labs (files+inbox, db+web) model the lethal trifecta: private data on one server,
 an outbound tool on another, and untrusted content that can steer the agent between them.
