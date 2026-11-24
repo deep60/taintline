@@ -267,6 +267,9 @@ def suite_markdown(res: dict) -> str:
     o = res["overall"]
     sm = res.get("summary")
     lines = [f"# Live suite: {res.get('lab') or res['server']}", ""]
+    if sm:
+        from ..report.trust import trust, trust_markdown
+        lines += trust_markdown(res.get("trust") or trust(res))
     if sm and not sm.get("valid", True):
         lines += ["> **INVALID RUN, do not read the score as a pass:** " + "; ".join(sm["invalid_reasons"]) + ".", ""]
     if sm:

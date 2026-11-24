@@ -241,7 +241,10 @@ def main(argv=None):
                      ("--scope", dict(default="SCOPE.yaml")), ("--out", dict(default="out/live_suite"))]:
         ls2.add_argument(flag, **kw)
     ls2.add_argument("--arg", action="append", default=[])
-    ls2.add_argument("--gullible", action="store_true")
+    ls2.add_argument("--gullible", action="store_true",
+                     help="positive control: tell the model to obey instructions found in tool output")
+    ls2.add_argument("--control", help="results.json of a --gullible run of the same setup; the report's trust "
+                                       "block checks that it saw leaks")
     ls2.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
     _add_agent_cmd(ls2)
     ls2.add_argument("--request-timeout", type=float,
@@ -614,6 +617,11 @@ def main(argv=None):
                              specs=lab.specs() if lab else None, base_env=lab.env if lab else None,
                              lab=lab.name if lab else None, budget=budget)
             res["sampling"] = {"temperature": a.temperature, "seed_fixed": a.fix_seed}
+            res["positive_control"] = bool(a.gullible)
+            from .report.trust import load_control, trust
+            if a.control:
+                res["control"] = load_control(a.control)
+            res["trust"] = trust(res)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
         except OutOfScope as e:
@@ -643,6 +651,9 @@ def main(argv=None):
               f"replay={Path(a.out, 'replay.html')}")
         if o["errors"]:
             print(f"WARNING: {o['errors']} trial(s) errored; errors are NOT counted as secure.")
+        t = res["trust"]
+        flagged = [c["check"] for c in t["checks"] if c["status"] in ("warn", "fail")]
+        print(f"trust: {t['label']}" + (f" ({', '.join(flagged)})" if flagged else ""))
         sm = res["summary"]
         if not sm["valid"]:
             print("INVALID RUN: " + "; ".join(sm["invalid_reasons"]), file=sys.stderr)
