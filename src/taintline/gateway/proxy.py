@@ -1,6 +1,10 @@
 """Transparent stdio MCP proxy: sits between an MCP client and a real server, records every
 JSON-RPC message, hashes the tool list, and can plant an injection.
 
+A test instrument, not a gateway: it blocks nothing and plants attacks on purpose. Start it through
+`taintline proxy` (which checks SCOPE.yaml) or a `taintline session` config, never in front of a
+server people rely on.
+
 MCP's stdio transport is newline-delimited JSON, so the proxy relays lines and only parses
 what it needs. Run as a module:
 

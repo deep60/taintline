@@ -119,6 +119,7 @@ def _session(a) -> None:
     print(f"session: attack={r['attack']} task={r['task']} tool calls: {calls}")
     print(f"session: injection fired={r['injection_fired']} read canary={r['canary_read']} "
           f"task done={done} oracle/sink disagree={r['oracle_disagrees_with_sink']}")
+    print(f"session: step-by-step replay: {Path(a.dir, 'replay.html')}")
     if not r["valid"]:
         print("INVALID: " + "; ".join(r["problems"]))
         raise SystemExit(3)
@@ -279,6 +280,10 @@ def main(argv=None):
     ls2 = sub.add_parser("live-suite", help="all live attacks x all live tasks vs a real stdio MCP server")
     for flag, kw in [("--server", dict()), ("--command", dict()),
                      ("--lab", dict(help="a lab from `taintline labs` (servers, tasks and attacks included)")),
+                     ("--target", dict(help="a target file describing YOUR server: url or command, a planted "
+                                            "canary, tools and tasks (see docs/TARGETS.md)")),
+                     ("--target-width", dict(type=float, help="pick -n so the overall 95%% CI is at most this "
+                                                              "wide (e.g. 0.15); overrides -n")),
                      ("--collaborator", dict(default="http://127.0.0.1:8099")),
                      ("--attacks", dict(help="YAML file/dir (default: bundled lab/notes attacks)")),
                      ("--mutators", dict(default="", help="comma list, e.g. base64,homoglyph")),
@@ -339,7 +344,9 @@ def main(argv=None):
     at.add_argument("--lab", help="check placeholders and tool names against this lab")
     at.add_argument("--show", action="store_true", help="print each attack as the lab will plant it")
 
-    px = sub.add_parser("proxy", help="recording stdio proxy for any MCP client (use after `--`: the server command)")
+    px = sub.add_parser("proxy", help="recording and injection proxy for TESTING with any MCP client; not a "
+                                       "production gateway (use after `--`: the server command; --server must "
+                                       "be in SCOPE.yaml)")
     px.add_argument("--server", required=True)
     px.add_argument("--scope", default="SCOPE.yaml")
     px.add_argument("--transcript")
@@ -673,20 +680,37 @@ def main(argv=None):
         from .gateway.live import GULLIBLE_SYSTEM, LIVE_TASKS, SinkUnavailable, live_suite, suite_markdown
         from .labs import get_lab
         lab = get_lab(a.lab) if a.lab else None
-        if not lab and not (a.server and a.command):
-            raise SystemExit("give --lab NAME, or both --server and --command")
+        tgt = None
+        if a.target:
+            from .target_file import TargetError, load_target
+            try:
+                tgt = load_target(a.target)
+            except (OSError, TargetError) as e:
+                raise SystemExit(f"invalid target file {a.target}: {e}")
+            a.server, a.command, a.arg = tgt.server, tgt.command, tgt.args
+        if not lab and not tgt and not (a.server and a.command):
+            raise SystemExit("give --lab NAME, --target FILE, or both --server and --command")
         try:
             gate = Gate(load_scope(a.scope))
             for name in (lab.servers if lab else [a.server]):
                 gate.check_server(name)
             check_run(gate, a.agent, a.base_url)
             subs = lab.subs() if lab else None
-            base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else \
-                (lab.attacks if lab else (lambda: load_attacks(str(LIVE_ATTACKS))))
+            if tgt:
+                base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else (lambda: tgt.attacks(a.collaborator))
+            else:
+                base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else \
+                    (lab.attacks if lab else (lambda: load_attacks(str(LIVE_ATTACKS))))
             attacks = base()
             for m in [m for m in a.mutators.split(",") if m]:
                 attacks += [mutate(x, m) for x in base()]
-            tasks = lab.tasks if lab else LIVE_TASKS
+            tasks = tgt.tasks if tgt else lab.tasks if lab else LIVE_TASKS
+            if a.target_width:
+                from .scoring.asr import trials_for_width
+                total = trials_for_width(a.target_width)
+                a.n = max(1, -(-total // max(1, len(attacks) * len(tasks))))
+                print(f"plan: --target-width {a.target_width:.0%} needs about {total} attack trials in all "
+                      f"-> n={a.n} per pair", file=sys.stderr)
             budget = Budget(a.max_trials, a.max_minutes * 60 if a.max_minutes else None, a.max_tokens)
             planned = (len(attacks) + 1) * len(tasks) * a.n
             print(f"plan: {len(attacks)} attacks x {len(tasks)} tasks + baseline, n={a.n} -> {planned} trials",
@@ -705,8 +729,12 @@ def main(argv=None):
                                          **_agent_cmd(a))
             res = live_suite(gate, factory, a.server or lab.name, a.command, a.arg, a.collaborator, attacks,
                              tasks, a.n, a.out,
-                             specs=lab.specs() if lab else None, base_env=lab.env if lab else None,
-                             lab=lab.name if lab else None, budget=budget)
+                             specs=lab.specs() if lab else None,
+                             base_env=lab.env if lab else (tgt.env if tgt else None),
+                             lab=lab.name if lab else None, budget=budget,
+                             target=tgt.runtime() if tgt else None)
+            if tgt:
+                res["target"] = {"file": a.target, "name": tgt.name, "url": tgt.url}
             res["sampling"] = {"temperature": a.temperature, "seed_fixed": a.fix_seed}
             res["positive_control"] = bool(a.gullible)
             from .report.trust import load_control, trust

@@ -8,6 +8,8 @@ Static checks only. Nothing here runs a server, resolves a package or touches th
   unpinned_package        npx/uvx/pipx/bunx/docker fetches a package with no fixed version  medium
   broad_filesystem        a server is handed / or the home folder                           medium
   mutable_image_tag       a docker image is pinned by tag, not digest                       low
+  possible_typosquat      a package name is 1-2 characters from a well-known MCP package    high
+  scope_confusion         the bare name of a scoped package (anyone can own it)             high
   auto_approved_tools     tools are set to run without asking the user                      low
   lethal_trifecta_in_server       one known server reads private data, takes in untrusted
                                   content and sends data out (GitHub, Slack, a mailbox)     medium
@@ -33,6 +35,7 @@ from urllib.parse import parse_qsl, urlparse
 from .auth_checks import LOCAL_HOSTS
 from .prove import proof_for
 from .server_catalog import trifecta
+from .typosquat import look_alike
 
 SEVERITY_ORDER = {"low": 1, "medium": 2, "high": 3}
 
@@ -293,6 +296,11 @@ def check_server(name: str, cfg: dict) -> list[tuple[str, str, str, str]]:
             elif state == "tag":
                 out.append(("mutable_image_tag", "low", f"image '{spec}' is pinned by tag, which can be moved",
                             "pin by digest (image@sha256:...) for a version that cannot change"))
+            squat = look_alike(spec, eco)
+            if squat:
+                out.append((squat[0], "high", squat[1],
+                            "check the package's publisher and repository; if it isn't the one you meant, remove "
+                            "it and rotate anything it could read"))
 
     homes = _home_variants()
     broad = [a for a in args if a.rstrip() in homes]

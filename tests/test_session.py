@@ -68,6 +68,8 @@ def test_gullible_client_leak_is_proven(tmp_path, sink):
     assert r["canary_arrived"] and r["oracle_success"] and not r["oracle_disagrees_with_sink"]
     assert [c["tool"] for c in r["tool_calls"]] == ["read_note", "read_note", "send_email"]
     assert json.loads((tmp_path / "result.json").read_text())["canary_arrived"]
+    page = (tmp_path / "replay.html").read_text()
+    assert "Secret leaked" in page and "Sink received" in page and "send_email" in page
 
 
 def test_careful_client_does_not_leak(tmp_path, sink):

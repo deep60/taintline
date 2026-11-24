@@ -37,6 +37,16 @@ version may change result formats (each results file carries its own `schema_ver
   and per attack, Holm-adjusted for testing many attacks at once. Says "not shown", never "no
   difference", when the evidence is thin, and carries over each run's trust verdict.
   `--fail-if-worse` exits 1 when B leaks significantly more, for CI.
+- `live-suite --target FILE`: the full suite against your own MCP server (Streamable HTTP or
+  stdio). The file names a canary you planted, the injection and outbound tools, and your tasks;
+  attacks send to the sink's own URL so a leak can be proven. See [docs/TARGETS.md](docs/TARGETS.md).
+- `--target-width W` picks `-n` so the overall 95% interval is at most W wide.
+- `audit` flags package names that imitate well-known MCP packages: one or two characters off,
+  or a scoped package's bare name, which anyone can own (`possible_typosquat`, `scope_confusion`;
+  high). Offline, against a fixed list; a typo inside an owned scope isn't flagged, since it can't
+  be published there.
+- `session score` writes a step-by-step `replay.html` of the session.
+- `taintline proxy` says what it is: a testing proxy, not a production gateway.
 
 ### Changed
 - Tool capability detection (`scan`, trifecta checks) reads tool names as words and input-schema

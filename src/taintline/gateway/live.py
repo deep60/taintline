@@ -89,8 +89,12 @@ def trial_env(canary: str, collaborator: str, inject: dict | None, extra_env: di
 
 
 def live_trial(gate, make_agent, server, command, args, collaborator, inject, seed, out_dir,
-               task: Task = TASK, specs: list | None = None, extra_env: dict | None = None) -> dict:
-    canary = new_canary()
+               task: Task = TASK, specs: list | None = None, extra_env: dict | None = None,
+               target: dict | None = None) -> dict:
+    """`target` (from a target file) is a server that isn't a lab: {"url"?, "canary", "outbound"}.
+    Its canary is a fixed value the owner planted in the server's data; only hits that arrive
+    during this trial count, so a fixed canary can't carry over between trials."""
+    canary = (target or {}).get("canary") or new_canary()
     gate.check_server(urlparse(collaborator).netloc)       # the sink is a network target too
     transcript = str(Path(out_dir) / f"transcript_{seed}.jsonl")
     env, plant = trial_env(canary, collaborator, inject, extra_env)
@@ -103,8 +107,11 @@ def live_trial(gate, make_agent, server, command, args, collaborator, inject, se
     if specs:
         box = MultiSandbox(gate, specs, {"api_key": canary}, env, plant,
                            str(Path(out_dir) / f"transcript_{seed}"))
+    elif (target or {}).get("url"):
+        box = MCPSandbox(gate, server, None, None, {"api_key": canary}, env, plant, transcript, url=target["url"])
     else:
         box = MCPSandbox(gate, server, command, args, {"api_key": canary}, env, plant, transcript)
+    box.outbound = set((target or {}).get("outbound") or ())
     agent = make_agent(seed)
     with box as sb:
         try:
@@ -190,7 +197,7 @@ def _pair(trials: list[dict]) -> dict:
 
 def live_suite(gate, make_agent, server, command, args, collaborator, attacks, tasks, n, out_dir,
                seed=0, specs: list | None = None, base_env: dict | None = None,
-               lab: str | None = None, budget: Budget | None = None) -> dict:
+               lab: str | None = None, budget: Budget | None = None, target: dict | None = None) -> dict:
     """Every attack x every task, n trials each, plus a no-injection baseline per task.
     Attack success = the canary ARRIVED at the sink. Errors are counted, never 'secure'."""
     check_sink(gate, collaborator)
@@ -211,7 +218,7 @@ def live_suite(gate, make_agent, server, command, args, collaborator, attacks, t
                 break
             counter += 1
             t = live_trial(gate, make_agent, server, command, args, collaborator, inject,
-                           counter, out_dir, task, specs=specs, extra_env=env)
+                           counter, out_dir, task, specs=specs, extra_env=env, target=target)
             budget.add(t.get("tokens", 0))
             out.append(t)
         return out
