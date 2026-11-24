@@ -127,7 +127,7 @@ def test_gullible_flag_sets_system_prompt(tmp_path, monkeypatch):
     import taintline.cli as cli
     from taintline.gateway import live
     seen = {}
-    monkeypatch.setattr(cli, "make_agent_factory", lambda kind, model, system, *a: seen.setdefault("s", system))
+    monkeypatch.setattr(cli, "make_agent_factory", lambda kind, model, system, *a, **k: seen.setdefault("s", system))
     monkeypatch.setattr(live, "live_run", lambda *a, **k: {
         "n": 1, "canary_arrived": 0, "arrival_rate": 0, "ci": [0, 0], "canary_read": 0,
         "canary_in_answer": 0, "oracle_success": 0, "oracle_disagrees_with_sink": 0, "errors": 0, "trials": []})

@@ -69,6 +69,18 @@ def _preflight(a) -> None:
         print(f"preflight: {warning}", file=sys.stderr)
 
 
+def _add_agent_cmd(p) -> None:
+    p.add_argument("--agent-cmd", help="with --agent command: your agent's command line, run once per trial "
+                                       "(it gets the tools over MCP; see docs/BYO_AGENT.md)")
+    p.add_argument("--agent-timeout", type=float, help="with --agent command: seconds before a trial is "
+                                                     "stopped and counted as an error (default 600)")
+
+
+def _agent_cmd(a) -> dict:
+    import shlex
+    return {"command": shlex.split(a.agent_cmd) if a.agent_cmd else None, "agent_timeout": a.agent_timeout}
+
+
 PREFLIGHT_HELP = "skip the check that the model server answers and offers --model before trial 1"
 
 
@@ -126,6 +138,7 @@ def main(argv=None):
     r.add_argument("--dry-run", action="store_true",
                    help="check scope and print the plan; make no model calls and touch no network")
     r.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
+    _add_agent_cmd(r)
 
     s = sub.add_parser("scan", help="static scan of an MCP tool manifest (JSON)")
     s.add_argument("manifest")
@@ -199,6 +212,7 @@ def main(argv=None):
     lv.add_argument("--scope", default="SCOPE.yaml")
     lv.add_argument("--out", default="out/live")
     lv.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
+    _add_agent_cmd(lv)
 
     bb = sub.add_parser("blackbox", help="test a chat endpoint you are authorized to test (M6); "
                                          "plants an injection, the collaborator sink proves any leak")
@@ -229,6 +243,7 @@ def main(argv=None):
     ls2.add_argument("--arg", action="append", default=[])
     ls2.add_argument("--gullible", action="store_true")
     ls2.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
+    _add_agent_cmd(ls2)
     ls2.add_argument("--request-timeout", type=float,
                      help="seconds to wait for one model reply (default 120 openai-compat, 300 ollama)")
     ls2.add_argument("--retries", type=int, default=2,
@@ -301,7 +316,7 @@ def main(argv=None):
 
     dm = sub.add_parser("demo", help="watch a prompt-injection leak happen and get proven at a sink (1 minute)")
     dm.add_argument("--out", default="out/demo")
-    dm.add_argument("--agent", choices=[k for k in AGENT_KINDS if not k.startswith("mock")],
+    dm.add_argument("--agent", choices=[k for k in AGENT_KINDS if not k.startswith("mock") and k != "command"],
                     help="put a real model in the attack scene (default: scripted agents, no model)")
     dm.add_argument("--model")
     dm.add_argument("--base-url")
@@ -592,7 +607,8 @@ def main(argv=None):
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
             factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env,
                                          temperature=a.temperature, fix_seed=a.fix_seed,
-                                         request_timeout=a.request_timeout, retries=a.retries)
+                                         request_timeout=a.request_timeout, retries=a.retries,
+                                         **_agent_cmd(a))
             res = live_suite(gate, factory, a.server or lab.name, a.command, a.arg, a.collaborator, attacks,
                              tasks, a.n, a.out,
                              specs=lab.specs() if lab else None, base_env=lab.env if lab else None,
@@ -659,7 +675,7 @@ def main(argv=None):
             )
             inject = injection_spec(a.inject, payload=a.payload or DEFAULT_PAYLOAD)
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
-            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env)
+            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env, **_agent_cmd(a))
             res = live_run(gate, factory, a.server, a.command, a.arg, a.collaborator, inject, a.n, a.out)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
@@ -730,7 +746,7 @@ def main(argv=None):
               f"tasks={len(TASKS)} n={a.n}; no calls made")
         return
     _preflight(a)
-    factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env)
+    factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env, **_agent_cmd(a))
     result = run_suite(factory, attacks, TASKS, a.n)
     result["meta"] = meta.collect(agent=a.agent, model=a.model, system_override=bool(a.system),
                                   n=a.n, attacks=attacks, mutators=mutator_names)

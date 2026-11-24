@@ -3,6 +3,15 @@
 All notable changes. Versions follow [Semantic Versioning](https://semver.org); before 1.0, a minor
 version may change result formats (each results file carries its own `schema_version`).
 
+## [Unreleased]
+
+### Added
+- `--agent command --agent-cmd "..."`: test your own agent, not just a model. Each trial runs your
+  command as a process and gives it the lab's tools over a local MCP endpoint (Streamable HTTP, or
+  stdio through a shim). The sink still decides success, and the agent never sees the canary.
+  Crashes and timeouts count as errors; exit 4 means the agent's turn limit. See
+  [docs/BYO_AGENT.md](docs/BYO_AGENT.md) and [examples/byo_agent/agent.py](examples/byo_agent/agent.py).
+
 ## [0.1.0] - 2026-11-24
 
 First public release. (Developed as "Tripwire", briefly renamed "Dyepack"; renamed again before release.)

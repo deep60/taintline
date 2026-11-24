@@ -16,6 +16,10 @@ def target_server(agent: str, base_url: str | None) -> str | None:
         return None
     if agent in _FIXED_HOSTS:
         return _FIXED_HOSTS[agent]
+    if agent == "command" and not base_url:
+        # your own process: taintline cannot see which model host it calls, so it gates only a host
+        # you declare with --base-url; the agent's own network access is yours to authorize
+        return None
     if base_url:
         return urlparse(base_url).netloc.lower()
     if agent == "ollama":
