@@ -3,7 +3,7 @@
 All notable changes. Versions follow [Semantic Versioning](https://semver.org); before 1.0, a minor
 version may change result formats (each results file carries its own `schema_version`).
 
-## [0.1.0] - unreleased
+## [0.1.0] - 2026-11-24
 
 First public release. (Developed as "Tripwire", briefly renamed "Dyepack"; renamed again before release.)
 

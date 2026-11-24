@@ -6,8 +6,18 @@ checks, no LLM judge**: did a unique canary secret actually arrive at a sink you
 It reports attack success with confidence intervals, a benign baseline (false alarms), and
 counts errors instead of treating them as "secure".
 
-> Status: working prototype (v0.1 in progress). Authorized testing only. Read
+> Status: v0.1.0, an early release. Authorized testing only. Read
 > [THREAT_MODEL.md](THREAT_MODEL.md) first.
+
+## Install
+```bash
+uv tool install taintline          # or: pipx install taintline
+taintline demo                     # one minute: a leak happens and is proven at a sink; no model, key or network
+```
+Or with Docker, no install:
+```bash
+docker run --rm --network none ghcr.io/deep60/taintline
+```
 
 ## What works today
 
@@ -37,15 +47,16 @@ but haven't been used on someone else's system or on GitHub yet.
 | GitHub Action for audit and monitor | [action.yml](action.yml), [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md) | a run on GitHub |
 | Black-box test of a chat endpoint you're authorized to test | `taintline blackbox` | a run on a real copilot |
 | Check the oracle against human labels | `label-sheet`, `gate0`, `rescore` | 30 labels ([docs/oracle_validation.md](docs/oracle_validation.md)) |
-| Docker image, PyPI package, release workflow | `docker run --rm --network none taintline`, [docs/RELEASE.md](docs/RELEASE.md) | first release |
+| Docker image, PyPI package, release workflow | `docker run --rm --network none ghcr.io/deep60/taintline`, [docs/RELEASE.md](docs/RELEASE.md) | first release |
 
 **Not built:** frontier-model benchmarks (Claude, GPT, Gemini), a real browser MCP server
 (the browser lab is simulated), targets for agent frameworks (LangGraph, OpenAI Agents SDK,
 Bedrock), an adaptive attacker, and a server or dashboard. See
 [docs/ENTERPRISE_PLAN.md](docs/ENTERPRISE_PLAN.md).
 
-## Quickstart (about 10 minutes, local model, nothing leaves your machine)
+## Quickstart with a real model (about 10 minutes, from a checkout, nothing leaves your machine)
 ```bash
+git clone https://github.com/deep60/taintline && cd taintline
 uv sync
 uv run python -m pytest -q                     # expect: all pass
 
