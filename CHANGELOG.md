@@ -20,6 +20,19 @@ version may change result formats (each results file carries its own `schema_ver
   Cursor, Claude Code). `start` writes an MCP config with the lab behind the recording proxy and
   the attack planted; you use the agent normally; `score` rebuilds the tool calls from the
   transcripts and asks the sink whether the canary arrived. See [docs/CLOSED_AGENTS.md](docs/CLOSED_AGENTS.md).
+- `audit` finds the **lethal trifecta across servers**: private data, untrusted content and a way out
+  spread over the servers one client loads (say filesystem + web search + a mailer), and single
+  servers that have all three (GitHub, Slack, a mailbox). Servers are recognized from a catalog of
+  well-known ones; unknown servers are left out, never guessed.
+- Every finding that can be tested carries a **prove** command: a `taintline session` lab with the
+  same shape (trifecta, poisoned description, shadowed tool, broad file access, auto-approval), or
+  `monitor` for unpinned packages. Shown in text, JSON and SARIF.
+
+### Changed
+- Tool capability detection (`scan`, trifecta checks) reads tool names as words and input-schema
+  parameter names (`url`, `to`, `sql`, `path`) instead of matching substrings anywhere in the text.
+  "http" in a description, or "note" in a tool's name, no longer counts as a capability. Each
+  capability now comes with its reason (`evidence` in scan output). Checked on all 25 lab tools.
 
 ## [0.1.0] - 2026-11-24
 

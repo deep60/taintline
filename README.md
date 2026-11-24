@@ -42,6 +42,7 @@ but haven't been used on someone else's system or on GitHub yet.
 | Test your own agent (any language or framework), not just a model: it gets the lab's tools over MCP | `--agent command --agent-cmd "python my_agent.py"`, [docs/BYO_AGENT.md](docs/BYO_AGENT.md) | a run with a real model and someone else's agent |
 | Test an agent you can't script (Claude Desktop, Cursor, Claude Code): add a generated config, use the agent, score it | `taintline session start`, `session score`, [docs/CLOSED_AGENTS.md](docs/CLOSED_AGENTS.md) | a session in a real desktop client |
 | Find MCP client configs and flag pasted secrets, plain http, unpinned packages, broad filesystem access | `taintline audit` | — |
+| Flag the lethal trifecta across the servers one client loads, with a command that proves each finding | `taintline audit` (findings carry `prove:`) | known servers only; precision on public servers not yet measured |
 | Rug-pull detection: alert when a server's tools change | `taintline monitor`, `--config` for every server in a config | — |
 | List and scan the tools of a stdio or Streamable HTTP server | `taintline enumerate`, `scan`, `pin`, `diff` | — |
 | SARIF 2.1.0 and OCSF output, signed webhooks | `--sarif`, `taintline sarif`, `taintline ocsf`, `--notify-url` | upload to GitHub code scanning |

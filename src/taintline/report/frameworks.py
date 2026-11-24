@@ -37,6 +37,8 @@ _DRIFT = {"owasp_llm": ["LLM03"], "mitre_atlas": ["AML.T0010"], "nist_800_53": [
 # exact rule first, then longest matching prefix
 RULE_TAGS = {
     "static/lethal_trifecta": {"owasp_llm": ["LLM06"], "mitre_atlas": [], "nist_800_53": ["AC-4"]},
+    "config/lethal_trifecta_in_server": {"owasp_llm": ["LLM06"], "mitre_atlas": [], "nist_800_53": ["AC-4"]},
+    "config/lethal_trifecta_across_servers": {"owasp_llm": ["LLM06"], "mitre_atlas": [], "nist_800_53": ["AC-4"]},
     "drift/modified": _DRIFT,
     "drift/added": _DRIFT,
     "drift/removed": _DRIFT,
