@@ -393,10 +393,35 @@ def main(argv=None):
     sc.add_argument("--answer", default="", help="the agent's final reply, to check the task was done")
     sc.add_argument("--answer-file", help="read the agent's reply from this file instead")
 
+    cp = sub.add_parser("compare", help="did a change really change the leak rate? Fisher's exact test, "
+                                         "overall and per attack (Holm-adjusted)")
+    cp.add_argument("a", help="results.json of the 'before' run (live-suite or live-run)")
+    cp.add_argument("b", help="results.json of the 'after' run")
+    cp.add_argument("--alpha", type=float, default=0.05)
+    cp.add_argument("--out", help="also write compare.json and compare.md to this folder")
+    cp.add_argument("--fail-if-worse", action="store_true",
+                    help="CI mode: exit 1 if B leaks significantly more than A")
+
     a = ap.parse_args(argv)
 
     if a.cmd == "session":
         return _session(a)
+
+    if a.cmd == "compare":
+        from .report.compare import compare, compare_markdown
+        try:
+            res = compare(a.a, a.b, a.alpha)
+        except (OSError, KeyError, ValueError) as e:
+            raise SystemExit(f"error: cannot compare these files ({type(e).__name__}: {e})")
+        md = compare_markdown(res)
+        print(md, end="")
+        if a.out:
+            Path(a.out).mkdir(parents=True, exist_ok=True)
+            Path(a.out, "compare.json").write_text(json.dumps(res, indent=2))
+            Path(a.out, "compare.md").write_text(md)
+        if a.fail_if_worse and res["overall"]["verdict"] == "B leaks more":
+            raise SystemExit(1)
+        return
 
     if a.cmd == "replay":
         from .report.replay import write_replay

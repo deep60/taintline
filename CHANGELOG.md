@@ -27,6 +27,16 @@ version may change result formats (each results file carries its own `schema_ver
 - Every finding that can be tested carries a **prove** command: a `taintline session` lab with the
   same shape (trifecta, poisoned description, shadowed tool, broad file access, auto-approval), or
   `monitor` for unpinned packages. Shown in text, JSON and SARIF.
+- Three MCP-specific attack surfaces, in the notes lab and the generic templates for every lab:
+  `tool_error` (one call fails with an error carrying the instruction), `tool_schema` (the
+  instruction sits in a parameter's description) and `rug_pull` (the tool is clean until first use,
+  then the server announces `tools/list_changed` and later listings carry the payload). The
+  sandbox now re-lists tools when a server says they changed, as real clients do. The static
+  scanner now reads parameter descriptions too. See [docs/ATTACKS.md](docs/ATTACKS.md).
+- `taintline compare A B`: did a change really change the leak rate? Fisher's exact test overall
+  and per attack, Holm-adjusted for testing many attacks at once. Says "not shown", never "no
+  difference", when the evidence is thin, and carries over each run's trust verdict.
+  `--fail-if-worse` exits 1 when B leaks significantly more, for CI.
 
 ### Changed
 - Tool capability detection (`scan`, trifecta checks) reads tool names as words and input-schema

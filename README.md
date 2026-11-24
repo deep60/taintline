@@ -41,6 +41,8 @@ but haven't been used on someone else's system or on GitHub yet.
 |---|---|---|
 | Test your own agent (any language or framework), not just a model: it gets the lab's tools over MCP | `--agent command --agent-cmd "python my_agent.py"`, [docs/BYO_AGENT.md](docs/BYO_AGENT.md) | a run with a real model and someone else's agent |
 | Test an agent you can't script (Claude Desktop, Cursor, Claude Code): add a generated config, use the agent, score it | `taintline session start`, `session score`, [docs/CLOSED_AGENTS.md](docs/CLOSED_AGENTS.md) | a session in a real desktop client |
+| MCP-specific attacks: injection in a tool error, in a parameter's description, and a mid-session rug pull | `live-suite` (surfaces `tool_error`, `tool_schema`, `rug_pull`; [docs/ATTACKS.md](docs/ATTACKS.md)) | a run on a real model |
+| Did a change really reduce leaks? Fisher's exact test per attack, corrected for many attacks | `taintline compare A B`, `--fail-if-worse` for CI | — |
 | Find MCP client configs and flag pasted secrets, plain http, unpinned packages, broad filesystem access | `taintline audit` | — |
 | Flag the lethal trifecta across the servers one client loads, with a command that proves each finding | `taintline audit` (findings carry `prove:`) | known servers only; precision on public servers not yet measured |
 | Rug-pull detection: alert when a server's tools change | `taintline monitor`, `--config` for every server in a config | — |
