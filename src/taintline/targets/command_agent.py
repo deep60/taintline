@@ -32,6 +32,16 @@ DEFAULT_TIMEOUT = 600.0
 _STDERR_TAIL = 800
 
 
+def reason(stderr: str) -> str:
+    """The line that says why the agent failed: the last one with text in it. Python prints the
+    exception last, but exception groups wrap it in `|` and `+---` borders, which are skipped."""
+    for line in reversed(stderr.splitlines()):
+        text = line.strip().strip("|+-").strip()
+        if any(c.isalnum() for c in text):
+            return text
+    return ""
+
+
 class CommandAgent:
     def __init__(self, command: list[str], seed: int = 0, system: str | None = None,
                  model: str | None = None, timeout: float | None = None, cwd: str | None = None):
@@ -70,8 +80,10 @@ class CommandAgent:
         if p.returncode == EXIT_TURN_LIMIT:
             raise AgentTimeout(p.stdout.strip() or "agent command reported its turn limit (exit 4)")
         if p.returncode != 0:
-            tail = (p.stderr or "").strip()[-_STDERR_TAIL:]
-            raise RuntimeError(f"agent command exited {p.returncode}" + (f": {tail}" if tail else ""))
+            err = (p.stderr or "").strip()
+            last = reason(err)
+            msg = f"agent command exited {p.returncode}" + (f": {last}" if last else "")
+            raise RuntimeError(msg + (f"\n{err[-_STDERR_TAIL:]}" if err and err != last else ""))
         return p.stdout.strip()
 
     def _read_usage(self, usage: Path) -> None:

@@ -102,6 +102,16 @@ def test_crash_is_an_error_with_stderr_not_secure(tmp_path, sink):
     assert "exited 1" in r["trials"][0]["error"] and "model API key missing" in r["trials"][0]["error"]
 
 
+def test_error_reason_skips_exception_group_borders():
+    from taintline.targets.command_agent import reason
+    err = ("  + Exception Group Traceback (most recent call last):\n"
+           "  |     raise mapped_exc(message) from exc\n"
+           "  | httpx.ConnectError: All connection attempts failed\n"
+           "  +------------------------------------\n")
+    assert reason(err) == "httpx.ConnectError: All connection attempts failed"
+    assert reason("") == ""
+
+
 def test_timeout_is_an_error(tmp_path, sink):
     url, _ = sink
     r = _run(_gate("notes", url.split("//")[1]), url, "slow", injection_spec("result"), 1, tmp_path,

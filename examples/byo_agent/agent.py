@@ -38,7 +38,9 @@ async def main() -> int:
             for _ in range(MAX_TURNS):
                 r = await http.post(f"{BASE_URL}/chat/completions", headers=headers,
                                     json={"model": MODEL, "messages": msgs, "tools": tools})
-                r.raise_for_status()
+                if r.status_code != 200:     # surface the server's reason, e.g. "model failed to load"
+                    print(f"model API {r.status_code}: {r.text[:300]}", file=sys.stderr)
+                    return 1
                 body = r.json()
                 tokens += (body.get("usage") or {}).get("total_tokens", 0)
                 msg = body["choices"][0]["message"]
