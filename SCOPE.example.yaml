@@ -1,0 +1,11 @@
+# Copy to SCOPE.yaml and edit. Taintline refuses any host, server or process not listed here.
+# SCOPE.yaml is git-ignored. Only list systems you own or are authorized in writing to test.
+name: my-lab
+authorized_by: "your name"   # who gave permission (required)
+servers:                     # hostnames with port, or stdio server names. No wildcards.
+  - notes                    # the bundled notes lab server
+  - localhost:8099           # the collaborator sink (lab/collaborator/server.py)
+  - localhost:11434          # Ollama
+  - localhost:1234           # LM Studio
+tools: null                  # null = every tool on in-scope servers, or a list: [read_note]
+fuzz: false                  # true only if active probing is explicitly authorized
