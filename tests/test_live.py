@@ -182,7 +182,8 @@ def test_live_attack_library_loads_with_expected_surfaces():
     from taintline.attacks import load_attacks
     from taintline.cli import LIVE_ATTACKS
     a = load_attacks(str(LIVE_ATTACKS))
-    assert len(a) >= 8 and {x.surface for x in a} == {"tool_result", "tool_description"}
+    assert len(a) >= 11 and {x.surface for x in a} == {"tool_result", "tool_description", "tool_error",
+                                                        "tool_schema", "rug_pull"}
     assert all("evil.example" in x.payload for x in a)
 
 

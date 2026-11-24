@@ -28,6 +28,12 @@ def scan_tool(tool: dict) -> list[dict]:
         {"tool": name, "kind": kind, "severity": sev}
         for pat, kind, sev in PATTERNS if re.search(pat, desc, re.I)
     ]
+    # instructions hidden in a parameter's description reach the model just the same
+    props = schema.get("properties") if isinstance(schema, dict) else None
+    for pname, p in (props.items() if isinstance(props, dict) else []):
+        pdesc = p.get("description", "") if isinstance(p, dict) else ""
+        findings += [{"tool": name, "kind": kind, "severity": sev, "where": f"parameter '{pname}'"}
+                     for pat, kind, sev in PATTERNS if re.search(pat, pdesc, re.I)]
     if HIDDEN_CHARS.search(text):
         findings.append({"tool": name, "kind": "hidden_unicode", "severity": "high"})
     if len(desc) > 1200:
