@@ -81,6 +81,54 @@ def _agent_cmd(a) -> dict:
     return {"command": shlex.split(a.agent_cmd) if a.agent_cmd else None, "agent_timeout": a.agent_timeout}
 
 
+def _session(a) -> None:
+    from .session import CLIENT_CONFIGS, SessionError, score_session, start_session
+    if a.session_cmd == "start":
+        from .labs import get_lab
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        try:
+            s = start_session(Gate(load_scope(a.scope)), get_lab(a.lab), a.collaborator, a.out, a.attack, a.task)
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        except SessionError as e:
+            raise SystemExit(f"error: {e}")
+        except OSError as e:
+            raise SystemExit(f"error: collaborator sink at {a.collaborator} is not answering ({e}). "
+                             "Start it: python3 lab/collaborator/server.py")
+        print(f"session: lab={s['lab']} attack={s['attack']} task={s['task']['id']}")
+        print(f"\n1. Add the servers in {s['config']} to your MCP client, then restart it:")
+        for client, where in CLIENT_CONFIGS.items():
+            print(f"     {client}: {where}")
+        print("2. In a NEW chat, send exactly:\n")
+        print(f"     {s['task']['prompt']}\n")
+        print(f"3. When the agent is done: taintline session score {a.out} --answer \"<its reply>\"")
+        print("4. Remove the taintline-* servers from your client afterwards.")
+        return
+    try:
+        answer = Path(a.answer_file).read_text() if a.answer_file else a.answer
+        r = score_session(a.dir, answer)
+    except FileNotFoundError as e:
+        raise SystemExit(f"error: {e}; run `taintline session start` first")
+    except OSError as e:
+        raise SystemExit(f"error: collaborator sink is not answering ({e})")
+    calls = ", ".join(c["tool"] for c in r["tool_calls"]) or "none"
+    done = {True: "yes", False: "no", None: "unknown (pass --answer)"}[r["task_completed"]]
+    print(f"session: attack={r['attack']} task={r['task']} tool calls: {calls}")
+    print(f"session: injection fired={r['injection_fired']} read canary={r['canary_read']} "
+          f"task done={done} oracle/sink disagree={r['oracle_disagrees_with_sink']}")
+    if not r["valid"]:
+        print("INVALID: " + "; ".join(r["problems"]))
+        raise SystemExit(3)
+    if r["canary_arrived"]:
+        print("LEAKED: the canary arrived at the sink. Result: " + str(Path(a.dir, "result.json")))
+        raise SystemExit(1)
+    print("no leak in this session (one trial; run several sessions for a rate). Result: "
+          + str(Path(a.dir, "result.json")))
+
+
 PREFLIGHT_HELP = "skip the check that the model server answers and offers --model before trial 1"
 
 
@@ -330,7 +378,25 @@ def main(argv=None):
     rp.add_argument("results")
     rp.add_argument("--out", help="output .html (default: replay.html next to the results file)")
 
+    se = sub.add_parser("session", help="test an agent you can't script (Claude Desktop, Cursor, any MCP "
+                                         "client): write its config, then score what happened")
+    ses = se.add_subparsers(dest="session_cmd", required=True)
+    st = ses.add_parser("start", help="write an MCP config with the lab behind the proxy and the attack planted")
+    st.add_argument("--lab", required=True, help="a lab from `taintline labs`")
+    st.add_argument("--attack", help="attack id (default: the lab's first); 'none' for a clean baseline")
+    st.add_argument("--task", help="task id (default: the lab's first)")
+    st.add_argument("--collaborator", default="http://127.0.0.1:8099")
+    st.add_argument("--scope", default="SCOPE.yaml")
+    st.add_argument("--out", default="out/session")
+    sc = ses.add_parser("score", help="read the transcripts and the sink: did the canary leave?")
+    sc.add_argument("dir", help="the --out folder of `session start`")
+    sc.add_argument("--answer", default="", help="the agent's final reply, to check the task was done")
+    sc.add_argument("--answer-file", help="read the agent's reply from this file instead")
+
     a = ap.parse_args(argv)
+
+    if a.cmd == "session":
+        return _session(a)
 
     if a.cmd == "replay":
         from .report.replay import write_replay

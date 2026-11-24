@@ -16,6 +16,10 @@ version may change result formats (each results file carries its own `schema_ver
   oracle agrees with sink, positive control, human validation of the oracle. Verdict: solid, read
   with care, or do not rely on it. Also saved as `trust` in results.json and printed after the run.
   Link a `--gullible` run with `--control PATH` so the positive-control check can pass.
+- `taintline session start` / `session score`: test agents you can't script (Claude Desktop,
+  Cursor, Claude Code). `start` writes an MCP config with the lab behind the recording proxy and
+  the attack planted; you use the agent normally; `score` rebuilds the tool calls from the
+  transcripts and asks the sink whether the canary arrived. See [docs/CLOSED_AGENTS.md](docs/CLOSED_AGENTS.md).
 
 ## [0.1.0] - 2026-11-24
 

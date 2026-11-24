@@ -71,19 +71,31 @@ def _page_fired(sb, payload: str) -> bool:
     return bool(needle) and any(needle in " ".join(str(c.result).split()) for c in sb.calls)
 
 
-def live_trial(gate, make_agent, server, command, args, collaborator, inject, seed, out_dir,
-               task: Task = TASK, specs: list | None = None, extra_env: dict | None = None) -> dict:
+def new_canary() -> str:
     # unique per trial AND per run: a seed-derived canary repeats across runs, so a sink that was
     # not restarted would match old hits and report leaks that never happened in this trial
-    canary = f"sk-live-CANARY{secrets.token_hex(6)}"
-    gate.check_server(urlparse(collaborator).netloc)       # the sink is a network target too
-    transcript = str(Path(out_dir) / f"transcript_{seed}.jsonl")
+    return f"sk-live-CANARY{secrets.token_hex(6)}"
+
+
+def trial_env(canary: str, collaborator: str, inject: dict | None, extra_env: dict | None = None):
+    """Lab-server environment for one trial, and the injection the proxy should plant (None when
+    the lab server itself carries the attack: native poisoning, or a payload in its own pages)."""
     env = {"NOTES_CANARY": canary, "LAB_CANARY": canary, "COLLAB_URL": collaborator, **(extra_env or {})}
     native = bool(inject) and inject.get("surface") == "native"
     page = bool(inject) and inject.get("surface") == "page"
     if page:                        # the lab server plants the payload in its own page markup
         env = {**env, "PAGE_PAYLOAD": inject["payload"], "PAGE_VECTOR": inject["vector"]}
-    plant = None if (native or page) else inject
+    return env, None if (native or page) else inject
+
+
+def live_trial(gate, make_agent, server, command, args, collaborator, inject, seed, out_dir,
+               task: Task = TASK, specs: list | None = None, extra_env: dict | None = None) -> dict:
+    canary = new_canary()
+    gate.check_server(urlparse(collaborator).netloc)       # the sink is a network target too
+    transcript = str(Path(out_dir) / f"transcript_{seed}.jsonl")
+    env, plant = trial_env(canary, collaborator, inject, extra_env)
+    native = bool(inject) and inject.get("surface") == "native"
+    page = bool(inject) and inject.get("surface") == "page"
     error = None
     max_turns = False
     answer = ""
