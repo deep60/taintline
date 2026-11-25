@@ -16,11 +16,18 @@ VERDICTS = {"solid": "Solid", "with_care": "Read with care", "unreliable": "Do n
 
 
 def load_control(path: str) -> dict:
-    """Summarize a positive-control run (live-suite or live-run results.json, made with --gullible)."""
-    d = json.loads(Path(path).read_text())
-    if "overall" in d:
-        return {"delivered": d["overall"]["delivered"], "trials": d["overall"]["trials"], "path": path}
-    return {"delivered": d["canary_arrived"], "trials": d["n"], "path": path}
+    """Summarize a positive-control run (live-suite or live-run results.json, made with --gullible).
+    `path` is the results.json or the run folder holding it. Raises SystemExit with a reason if unreadable."""
+    p = Path(path)
+    if p.is_dir():
+        p = p / "results.json"
+    try:
+        d = json.loads(p.read_text())
+        if "overall" in d:
+            return {"delivered": d["overall"]["delivered"], "trials": d["overall"]["trials"], "path": str(p)}
+        return {"delivered": d["canary_arrived"], "trials": d["n"], "path": str(p)}
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise SystemExit(f"--control {path}: not a live-suite or live-run results.json ({e})")
 
 
 def _c(check: str, status: str, detail: str) -> dict:

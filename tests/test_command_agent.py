@@ -95,6 +95,19 @@ def test_agent_never_sees_the_canary_in_its_environment(tmp_path, sink):
     assert "TAINTLINE_MCP_URL" in t["answer"] and "TAINTLINE_PROMPT" in t["answer"]
 
 
+def test_base_url_reaches_the_agent_only_when_given(tmp_path, monkeypatch):
+    from taintline.targets import make_agent_factory
+    monkeypatch.delenv("TAINTLINE_BASE_URL", raising=False)
+
+    class _Br:
+        url, stdio_command = "http://127.0.0.1:1/mcp", ["x"]
+    with_url = make_agent_factory("command", base_url="http://localhost:1234/v1", command=["true"])(0)
+    without = make_agent_factory("command", command=["true"])(0)
+    env = with_url._env("p", _Br(), tmp_path / "c.json", tmp_path / "u.json")
+    assert env["TAINTLINE_BASE_URL"] == "http://localhost:1234/v1"
+    assert "TAINTLINE_BASE_URL" not in without._env("p", _Br(), tmp_path / "c.json", tmp_path / "u.json")
+
+
 def test_crash_is_an_error_with_stderr_not_secure(tmp_path, sink):
     url, _ = sink
     r = _run(_gate("notes", url.split("//")[1]), url, "fail", injection_spec("result"), 1, tmp_path)

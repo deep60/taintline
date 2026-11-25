@@ -9,6 +9,7 @@ your command with:
     TAINTLINE_MCP_STDIO        the same stdio command, as a JSON list
     TAINTLINE_SYSTEM           a system prompt override (set by --system or --gullible), if any
     TAINTLINE_MODEL, TAINTLINE_SEED       --model and the trial seed, for agents that want them
+    TAINTLINE_BASE_URL         --base-url (the model API the scope gate checked), if given
     TAINTLINE_USAGE_FILE       optional: write {"tokens": N} here so --max-tokens can count usage
 
 Your agent prints its final answer on stdout and exits 0. Exit 4 means "gave up at my turn limit"
@@ -44,11 +45,13 @@ def reason(stderr: str) -> str:
 
 class CommandAgent:
     def __init__(self, command: list[str], seed: int = 0, system: str | None = None,
-                 model: str | None = None, timeout: float | None = None, cwd: str | None = None):
+                 model: str | None = None, timeout: float | None = None, cwd: str | None = None,
+                 base_url: str | None = None):
         if not command:
             raise ValueError("command agent needs a command")
         self.command = list(command)
         self.seed, self.system, self.model, self.cwd = seed, system, model, cwd
+        self.base_url = base_url
         self.timeout = timeout or DEFAULT_TIMEOUT
         self.tokens_used = 0
 
@@ -57,7 +60,8 @@ class CommandAgent:
                "TAINTLINE_PROMPT": prompt, "TAINTLINE_MCP_URL": br.url,
                "TAINTLINE_MCP_CONFIG": str(config), "TAINTLINE_MCP_STDIO": json.dumps(br.stdio_command),
                "TAINTLINE_SEED": str(self.seed), "TAINTLINE_USAGE_FILE": str(usage)}
-        for key, val in (("TAINTLINE_SYSTEM", self.system), ("TAINTLINE_MODEL", self.model)):
+        for key, val in (("TAINTLINE_SYSTEM", self.system), ("TAINTLINE_MODEL", self.model),
+                         ("TAINTLINE_BASE_URL", self.base_url)):
             if val:
                 env[key] = val
             else:

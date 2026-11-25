@@ -30,6 +30,7 @@ Your command gets:
 | `TAINTLINE_MCP_STDIO` | the same stdio command as a JSON list |
 | `TAINTLINE_SYSTEM` | set only with `--system` or `--gullible` (the positive control); use it as your system prompt if you can |
 | `TAINTLINE_MODEL`, `TAINTLINE_SEED` | `--model` and the trial number, if your agent wants them |
+| `TAINTLINE_BASE_URL` | `--base-url`, if given: the model API the scope gate checked. Point your agent's model client at it |
 | `TAINTLINE_USAGE_FILE` | optional: write `{"tokens": N}` here and `--max-tokens` will count it |
 
 It must:
@@ -56,7 +57,7 @@ last few lines into your own entry point.
 
 Taintline still gates everything it starts or contacts: the lab servers and the sink must be in
 `SCOPE.yaml`. It can't see which model host your agent calls. If you pass `--base-url`, that host
-is checked against the scope too; otherwise your agent's own network access is yours to authorize.
+is checked against the scope too and handed to your agent as `TAINTLINE_BASE_URL`; otherwise your agent's own network access is yours to authorize.
 
 ## Reading the result
 

@@ -97,3 +97,25 @@ def test_load_control_reads_a_gullible_run(tmp_path):
     live_run_shape = tmp_path / "run.json"
     live_run_shape.write_text(json.dumps({"n": 5, "canary_arrived": 4}))
     assert load_control(str(live_run_shape))["delivered"] == 4
+
+
+def test_load_control_accepts_the_run_folder_and_rejects_junk(tmp_path):
+    import pytest
+    (tmp_path / "results.json").write_text(json.dumps({"n": 10, "canary_arrived": 4}))
+    assert load_control(str(tmp_path))["trials"] == 10
+    with pytest.raises(SystemExit, match="--control"):
+        load_control(str(tmp_path / "missing"))
+
+
+def test_bad_control_stops_live_suite_before_any_trial(tmp_path, monkeypatch):
+    import pytest
+
+    import taintline.cli as cli
+    ran = []
+    monkeypatch.setattr(cli, "live_suite", lambda *a, **k: ran.append(1), raising=False)
+    sc = tmp_path / "s.yaml"
+    sc.write_text("name: t\nauthorized_by: me\nservers: [notes, 'localhost:11434']\n")
+    with pytest.raises(SystemExit, match="--control"):
+        cli.main(["live-suite", "--lab", "notes", "--agent", "mock-naive", "--scope", str(sc),
+                  "--control", str(tmp_path / "nope"), "--out", str(tmp_path / "o")])
+    assert ran == []

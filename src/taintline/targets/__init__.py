@@ -18,7 +18,8 @@ def make_agent_factory(kind: str, model: str | None = None, system: str | None =
     if kind == "command":       # your own agent, run as a process each trial (targets/command_agent.py)
         if not command:
             raise SystemExit("--agent-cmd is required for --agent command")
-        return lambda seed: CommandAgent(command, seed=seed, system=system, model=model, timeout=agent_timeout)
+        return lambda seed: CommandAgent(command, seed=seed, system=system, model=model,
+                                             timeout=agent_timeout, base_url=base_url)
     if kind == "mock-naive":
         return lambda seed: MockAgent(0.85, decodes_base64=True, seed=seed)
     if kind == "mock-hardened":

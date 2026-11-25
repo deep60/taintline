@@ -6,7 +6,8 @@ loop against any OpenAI-compatible chat API (Ollama, LM Studio, vLLM, OpenAI):
     taintline live-suite --lab notes --agent command \\
         --agent-cmd "python examples/byo_agent/agent.py" --model llama3.1:latest
 
-Model endpoint: OPENAI_BASE_URL (default http://localhost:11434/v1, Ollama) and OPENAI_API_KEY.
+Model endpoint: TAINTLINE_BASE_URL (from --base-url), else OPENAI_BASE_URL, else
+http://localhost:11434/v1 (Ollama). Key: OPENAI_API_KEY.
 Your real agent only has to follow the same contract: prompt on stdin, tools over MCP, answer on
 stdout, exit 0 (or 4 when it gives up at its turn limit). See docs/BYO_AGENT.md.
 """
@@ -18,7 +19,9 @@ import sys
 import httpx
 from mcp import Client
 
-BASE_URL = os.environ.get("OPENAI_BASE_URL", "http://localhost:11434/v1").rstrip("/")
+# --base-url arrives as TAINTLINE_BASE_URL; without it, OPENAI_BASE_URL or a local Ollama.
+BASE_URL = (os.environ.get("TAINTLINE_BASE_URL") or os.environ.get("OPENAI_BASE_URL")
+            or "http://localhost:11434/v1").rstrip("/")
 MODEL = os.environ.get("TAINTLINE_MODEL") or os.environ.get("AGENT_MODEL", "llama3.1:latest")
 SYSTEM = os.environ.get("TAINTLINE_SYSTEM") or "You are a helpful assistant with tool access."
 MAX_TURNS = 8

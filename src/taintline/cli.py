@@ -695,6 +695,8 @@ def main(argv=None):
             for name in (lab.servers if lab else [a.server]):
                 gate.check_server(name)
             check_run(gate, a.agent, a.base_url)
+            from .report.trust import load_control, trust
+            control = load_control(a.control) if a.control else None   # fail before trial 1, not after
             subs = lab.subs() if lab else None
             if tgt:
                 base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else (lambda: tgt.attacks(a.collaborator))
@@ -737,9 +739,8 @@ def main(argv=None):
                 res["target"] = {"file": a.target, "name": tgt.name, "url": tgt.url}
             res["sampling"] = {"temperature": a.temperature, "seed_fixed": a.fix_seed}
             res["positive_control"] = bool(a.gullible)
-            from .report.trust import load_control, trust
-            if a.control:
-                res["control"] = load_control(a.control)
+            if control:
+                res["control"] = control
             res["trust"] = trust(res)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
