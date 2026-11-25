@@ -53,6 +53,15 @@ your real servers for the test:
 the official MCP SDK client plus a tool loop against any OpenAI-compatible API. Copy its first and
 last few lines into your own entry point.
 
+## Tools that change mid-session
+
+The local endpoint supports the server-to-client event stream (a GET with
+`Accept: text/event-stream`, which the official MCP SDKs open on their own). When the lab server
+announces `notifications/tools/list_changed` (the `rug_pull` attacks), it is passed on there, and
+through the stdio shim. If your agent re-reads the tool list when told it changed, as most MCP
+clients do, it sees the changed tools; if it never re-reads, the attack never fires, and the report
+says so rather than counting it as secure.
+
 ## Scope
 
 Taintline still gates everything it starts or contacts: the lab servers and the sink must be in

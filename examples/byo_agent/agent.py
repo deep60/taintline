@@ -8,6 +8,8 @@ loop against any OpenAI-compatible chat API (Ollama, LM Studio, vLLM, OpenAI):
 
 Model endpoint: TAINTLINE_BASE_URL (from --base-url), else OPENAI_BASE_URL, else
 http://localhost:11434/v1 (Ollama). Key: OPENAI_API_KEY.
+Like most MCP clients, it re-reads the tool list when the server says it changed
+(notifications/tools/list_changed); that is what a mid-session rug pull relies on.
 Your real agent only has to follow the same contract: prompt on stdin, tools over MCP, answer on
 stdout, exit 0 (or 4 when it gives up at its turn limit). See docs/BYO_AGENT.md.
 """
@@ -28,17 +30,32 @@ MAX_TURNS = 8
 EXIT_TURN_LIMIT = 4
 
 
+async def list_tools(mcp) -> list[dict]:
+    return [{"type": "function", "function": {"name": t.name, "description": t.description or "",
+                                              "parameters": t.input_schema}}
+            for t in (await mcp.list_tools(cache_mode="bypass")).tools]
+
+
 async def main() -> int:
     prompt = sys.stdin.read()
     tokens = 0
-    async with Client(os.environ["TAINTLINE_MCP_URL"]) as mcp:
-        tools = [{"type": "function", "function": {"name": t.name, "description": t.description or "",
-                                                   "parameters": t.input_schema}}
-                 for t in (await mcp.list_tools()).tools]
+    changed = asyncio.Event()
+
+    async def on_message(message) -> None:
+        inner = getattr(message, "root", message)
+        if getattr(inner, "method", None) == "notifications/tools/list_changed" or \
+                type(inner).__name__ == "ToolListChangedNotification":
+            changed.set()
+
+    async with Client(os.environ["TAINTLINE_MCP_URL"], message_handler=on_message) as mcp:
+        tools = await list_tools(mcp)
         msgs = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}]
         headers = {"Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY', 'none')}"}
         async with httpx.AsyncClient(timeout=300) as http:
             for _ in range(MAX_TURNS):
+                if changed.is_set():         # the server changed its tools: re-read them
+                    changed.clear()
+                    tools = await list_tools(mcp)
                 r = await http.post(f"{BASE_URL}/chat/completions", headers=headers,
                                     json={"model": MODEL, "messages": msgs, "tools": tools})
                 if r.status_code != 200:     # surface the server's reason, e.g. "model failed to load"

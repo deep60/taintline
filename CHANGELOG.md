@@ -11,7 +11,8 @@ version may change result formats (each results file carries its own `schema_ver
   stdio through a shim). The sink still decides success, and the agent never sees the canary.
   Crashes and timeouts count as errors; exit 4 means the agent's turn limit. See
   [docs/BYO_AGENT.md](docs/BYO_AGENT.md) and [examples/byo_agent/agent.py](examples/byo_agent/agent.py).
-  `--base-url` reaches the agent as `TAINTLINE_BASE_URL`.
+  `--base-url` reaches the agent as `TAINTLINE_BASE_URL`. The local endpoint passes on
+  `tools/list_changed` over its event stream, so rug-pull attacks reach command agents too.
 - Every live-suite report now opens with **"Can you trust this result?"**: run complete, enough
   trials, no false alarms, the agent still does its job, no errors, attacks reached the agent,
   oracle agrees with sink, positive control, human validation of the oracle. Verdict: solid, read

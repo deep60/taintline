@@ -5,13 +5,15 @@ sb.call(), so it lands in sb.calls and reaches the real lab server through the r
 exactly as calls from the built-in agents do; the oracle and the sink cannot tell the difference.
 
 It listens on 127.0.0.1 only, on a free port, for the length of one trial. It is a test fixture,
-not a gateway: one JSON response per POST, no server-initiated stream (GET answers 405, which the
-spec allows), and only tools. Agents that speak stdio MCP use `stdio_command`, a shim
+not a gateway: one JSON response per POST, and only tools. A GET opens the server-to-client event
+stream; its only message is notifications/tools/list_changed, passed on when the lab server sends
+one (the rug_pull surface), so an agent that re-lists on it sees the changed tools. Agents that speak stdio MCP use `stdio_command`, a shim
 (gateway/bridge_stdio.py) that relays each line to this endpoint.
 """
 from __future__ import annotations
 
 import json
+import queue
 import secrets
 import sys
 import threading
@@ -22,6 +24,8 @@ from .. import __version__
 DEFAULT_PROTOCOL = "2025-06-18"
 MAX_BODY = 8 * 1024 * 1024
 METHOD_NOT_FOUND, INVALID_REQUEST, PARSE_ERROR = -32601, -32600, -32700
+LIST_CHANGED = {"jsonrpc": "2.0", "method": "notifications/tools/list_changed"}
+KEEPALIVE = 10.0
 
 
 def _tool(d: dict) -> dict:
@@ -39,12 +43,35 @@ class McpBridge:
         self.url = f"http://{host}:{self._srv.server_address[1]}/mcp"
         self.stdio_command = [sys.executable, "-m", "taintline.gateway.bridge_stdio", self.url]
         self._thread = threading.Thread(target=self._srv.serve_forever, daemon=True)
+        self._streams: list[queue.Queue] = []      # one per open GET stream
+        self._slock = threading.Lock()
+        self._closing = threading.Event()
+        self.pushed = 0                             # list_changed notifications delivered to a stream
+
+    def notify_tools_changed(self) -> None:
+        """Pass a list_changed notification to every open event stream (safe from any thread)."""
+        with self._slock:
+            for q in self._streams:
+                q.put(LIST_CHANGED)
+            self.pushed += bool(self._streams)
+
+    def _listeners(self) -> list | None:
+        cbs = getattr(self.sb, "on_tools_changed", None)
+        return cbs if isinstance(cbs, list) else None
 
     def __enter__(self) -> "McpBridge":
+        if (cbs := self._listeners()) is not None:
+            cbs.append(self.notify_tools_changed)
         self._thread.start()
         return self
 
     def __exit__(self, *exc) -> None:
+        if (cbs := self._listeners()) is not None and self.notify_tools_changed in cbs:
+            cbs.remove(self.notify_tools_changed)
+        self._closing.set()
+        with self._slock:
+            for q in self._streams:
+                q.put(None)                         # wake each stream so it ends now
         self._srv.shutdown()
         self._srv.server_close()
         self._thread.join(timeout=5)
@@ -54,7 +81,7 @@ class McpBridge:
         method, params = msg.get("method"), msg.get("params") or {}
         if method == "initialize":
             result = {"protocolVersion": params.get("protocolVersion") or DEFAULT_PROTOCOL,
-                      "capabilities": {"tools": {"listChanged": False}},
+                      "capabilities": {"tools": {"listChanged": True}},
                       "serverInfo": {"name": "taintline-bridge", "version": __version__}}
         elif method == "ping":
             result = {}
@@ -88,8 +115,38 @@ class McpBridge:
                 self.end_headers()
                 self.wfile.write(data)
 
-            def do_GET(self):                    # no server-initiated stream
-                self._send(405, None, {"Allow": "POST, DELETE"})
+            def do_GET(self):                    # the server-to-client event stream
+                if self.path.split("?")[0] != "/mcp":
+                    return self._send(404)
+                if "text/event-stream" not in (self.headers.get("Accept") or ""):
+                    return self._send(405, None, {"Allow": "POST, DELETE"})
+                q: queue.Queue = queue.Queue()
+                with bridge._slock:
+                    bridge._streams.append(q)
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Mcp-Session-Id", bridge._session)
+                    self.end_headers()
+                    self.wfile.write(b": stream open\n\n")
+                    self.wfile.flush()
+                    while not bridge._closing.is_set():
+                        try:
+                            msg = q.get(timeout=KEEPALIVE)
+                            if msg is None:
+                                break
+                            self.wfile.write(f"event: message\ndata: {json.dumps(msg)}\n\n".encode())
+                        except queue.Empty:
+                            self.wfile.write(b": keepalive\n\n")
+                        self.wfile.flush()
+                except OSError:                  # the agent went away
+                    pass
+                finally:
+                    with bridge._slock:
+                        if q in bridge._streams:
+                            bridge._streams.remove(q)
+                    self.close_connection = True
 
             def do_DELETE(self):                 # session end: nothing to clean up
                 self._send(200)

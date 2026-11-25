@@ -25,7 +25,7 @@ Placeholders (filled per lab): `{inject_tool}` `{inject_server}` `{read_secret}`
 | `tool_error` | one call of `target_tool` fails with an error carrying the payload | later calls work, so the instruction can be carried out; `after` picks which call |
 | `tool_description` | the tool's description in the tool list | seen from the start |
 | `tool_schema` | the description of the tool's first parameter | many scanners only read tool descriptions |
-| `rug_pull` | clean until `target_tool`'s first use; then the proxy sends `notifications/tools/list_changed` and later listings carry it | stdio servers only; fires only if the agent re-reads the tool list. Not yet with `--agent command`: its local endpoint has no stream to push `list_changed` on |
+| `rug_pull` | clean until `target_tool`'s first use; then the proxy sends `notifications/tools/list_changed` and later listings carry it | stdio servers only; fires only if the agent re-reads the tool list. With `--agent command`, the bridge passes `list_changed` on its event stream (and through the stdio shim); `examples/byo_agent/agent.py` re-lists on it |
 | `native` | nothing planted: the lab server is itself malicious (see `poisoned+inbox`) | put `env: {POISON: "1"}` |
 | `page` | the browser lab renders it into a page | needs `env: {PAGE_VECTOR: ...}` |
 

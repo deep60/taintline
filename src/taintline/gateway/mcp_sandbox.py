@@ -35,6 +35,7 @@ class MCPSandbox:
         self.injection = inject
         self.calls: list[ToolCall] = []
         self._timeout = timeout
+        self.on_tools_changed: list = []   # callbacks, e.g. the bridge passing list_changed to a command agent
         if url:
             self._params = None
             self._defs, self._session, self._error = [], None, None
@@ -116,6 +117,11 @@ class MCPSandbox:
         if type(inner).__name__ == "ToolListChangedNotification" or \
                 getattr(inner, "method", None) == "notifications/tools/list_changed":
             self._stale = True
+            for cb in list(self.on_tools_changed):
+                try:
+                    cb()
+                except Exception:       # a listener must never break the sandbox
+                    pass
 
     def close(self) -> None:
         if self._stop is not None:
