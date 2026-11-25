@@ -8,7 +8,16 @@ Static checks only. Nothing here runs a server, resolves a package or touches th
   unpinned_package        npx/uvx/pipx/bunx/docker fetches a package with no fixed version  medium
   broad_filesystem        a server is handed / or the home folder                           medium
   mutable_image_tag       a docker image is pinned by tag, not digest                       low
+  possible_typosquat      a package name is 1-2 characters from a well-known MCP package    high
+  scope_confusion         the bare name of a scoped package (anyone can own it)             high
   auto_approved_tools     tools are set to run without asking the user                      low
+  lethal_trifecta_in_server       one known server reads private data, takes in untrusted
+                                  content and sends data out (GitHub, Slack, a mailbox)     medium
+  lethal_trifecta_across_servers  the servers one agent loads cover all three between them  medium
+
+The trifecta checks recognize well-known servers by name and package (scanner/server_catalog.py);
+unknown servers are left out, never guessed. Findings that can be tested carry a `prove` command
+(scanner/prove.py): a `taintline session` lab with the same shape, or `monitor`.
 
 Secret values are never printed or stored: a finding names the server, the field and the kind.
 Client config locations change between releases, so DISCOVERY is a best-known list, not a promise;
@@ -24,6 +33,9 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlparse
 
 from .auth_checks import LOCAL_HOSTS
+from .prove import proof_for
+from .server_catalog import trifecta
+from .typosquat import look_alike
 
 SEVERITY_ORDER = {"low": 1, "medium": 2, "high": 3}
 
@@ -68,6 +80,7 @@ class AuditFinding:
     severity: str
     message: str
     fix: str
+    prove: dict | None = None        # {"command", "why"}: how to test this finding dynamically
 
 
 # -- discovery ------------------------------------------------------------------------------------
@@ -283,6 +296,11 @@ def check_server(name: str, cfg: dict) -> list[tuple[str, str, str, str]]:
             elif state == "tag":
                 out.append(("mutable_image_tag", "low", f"image '{spec}' is pinned by tag, which can be moved",
                             "pin by digest (image@sha256:...) for a version that cannot change"))
+            squat = look_alike(spec, eco)
+            if squat:
+                out.append((squat[0], "high", squat[1],
+                            "check the package's publisher and repository; if it isn't the one you meant, remove "
+                            "it and rotate anything it could read"))
 
     homes = _home_variants()
     broad = [a for a in args if a.rstrip() in homes]
@@ -325,15 +343,54 @@ def audit_file(path: str | Path, client: str | None = None) -> tuple[list[AuditF
     if not isinstance(doc, dict):
         return [], 0, "top level is not an object"
     found, servers = [], servers_in(doc)
+    shown = _display(path)
+    lines: dict[tuple[str, str], int] = {}
     for where, name, cfg in servers:
         if where.startswith("projects["):          # same server name can repeat across projects
             anchor = text.find(json.dumps(where[len("projects["):where.index("].")]))
         else:
             anchor = text.find(f'"{where.split(".")[-1]}"')
-        line = _line_of(text, name, max(anchor, 0))
+        line = lines[(where, name)] = _line_of(text, name, max(anchor, 0))
         for kind, sev, msg, fix in check_server(name, cfg):
-            found.append(AuditFinding(_display(path), line, client, name, kind, sev, msg, fix))
+            found.append(AuditFinding(shown, line, client, name, kind, sev, msg, fix))
+    found += _trifecta_findings(servers, lines, shown, client)
+    for f in found:
+        f.prove = f.prove or proof_for(f.kind, shown)
     return found, len(servers), None
+
+
+def _trifecta_findings(servers, lines, shown: str, client: str) -> list[AuditFinding]:
+    """One agent loads every server in a block (plus the global ones, for a per-project block)."""
+    blocks: dict[str, list[tuple[str, dict]]] = {}
+    for where, name, cfg in servers:
+        blocks.setdefault(where, []).append((name, cfg))
+    out = []
+    for where, members in blocks.items():
+        if where.startswith("projects["):
+            members = blocks.get("mcpServers", []) + members
+        t = trifecta(members)
+        first = min((lines.get((where, n)) or lines.get(("mcpServers", n)) or 1) for n, _ in members)
+        for name in t["single"]:
+            out.append(AuditFinding(
+                shown, lines.get((where, name)) or first, client, name, "lethal_trifecta_in_server", "medium",
+                f"{name} alone reads private data, takes in content others write, and can send data out "
+                f"({t['kinds'][name]})",
+                "use a read-only token or a narrower server, and keep approval on for its outbound tools"))
+        if t["across"]:
+            legs = t["legs"]
+            msg = (f"together these servers give one agent private data ({', '.join(legs['private_read'])}), "
+                   f"untrusted content ({', '.join(legs['untrusted_in'])}) and a way out "
+                   f"({', '.join(legs['external_out'])}): an instruction planted in the content can move "
+                   "the data out")
+            names = sorted({n for v in legs.values() for n in v})
+            web_only_out = all(t["kinds"][n].startswith("web access") for n in legs["external_out"])
+            f = AuditFinding(shown, first, client, ", ".join(names), "lethal_trifecta_across_servers", "medium",
+                             msg, "load these in separate clients or profiles, or keep approval on for the "
+                                  f"outbound tools of {', '.join(legs['external_out'])}")
+            f.prove = proof_for("lethal_trifecta_across_servers/url" if web_only_out
+                                else "lethal_trifecta_across_servers", shown)
+            out.append(f)
+    return out
 
 
 def audit(paths: list[str] | None = None, project: str | None = ".", user: bool = True) -> dict:
@@ -373,6 +430,8 @@ def format_audit(res: dict, color: bool | None = None) -> str:
         lines.append(f"{c(f['severity'], f['severity'].upper()):<8} {f['file']}:{f['line']}  "
                      f"[{f['server']}] {f['message']}")
         lines.append(f"         fix: {f['fix']}")
+        if f.get("prove"):
+            lines.append(f"         prove: {f['prove']['command']}  ({f['prove']['why']})")
     counts = {s: sum(f["severity"] == s for f in res["findings"]) for s in ("high", "medium", "low")}
     lines.append(f"\n{len(res['findings'])} finding(s): {counts['high']} high, {counts['medium']} medium, "
                  f"{counts['low']} low. Secret values are never printed.")

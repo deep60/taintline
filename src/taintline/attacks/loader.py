@@ -32,6 +32,9 @@ class Attack:
             return "native_poison"
         if self.surface == "page":
             return "page_injection"
+        if self.surface in ("tool_error", "tool_schema", "rug_pull"):
+            return {"tool_error": "error_injection", "tool_schema": "schema_poison",
+                    "rug_pull": "rug_pull"}[self.surface]
         if self.parts:
             return "split_payload"
         if self.after:

@@ -22,8 +22,9 @@ def _leaves_the_site(c) -> bool:
     return False
 
 
-def outbound_calls(calls) -> list:
-    return [c for c in calls if c.name in OUTBOUND or _leaves_the_site(c)]
+def outbound_calls(calls, extra=()) -> list:
+    """`extra`: the outbound tools of a target that isn't a lab (named in its target file)."""
+    return [c for c in calls if c.name in OUTBOUND or c.name in extra or _leaves_the_site(c)]
 
 
 def unauthorized_tools(calls, allowed) -> list[str]:

@@ -18,7 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 from .hash import hash_tools
-from .proxy import Recorder, _payload_for_call, _plant_in_result, _plant_in_tools
+from .proxy import CALL_SURFACES, Recorder, _payload_for_call, plant_in_call, plant_in_list
 
 SECRET_HEADERS = {"authorization", "cookie", "proxy-authorization", "x-api-key"}
 DROP_REQUEST = {"host", "content-length", "connection", "accept-encoding", "transfer-encoding"}
@@ -153,16 +153,15 @@ class HttpProxy:
             inj = self.inject
             if method == "tools/list":
                 extra["upstream_hashes"] = hash_tools(msg["result"].get("tools", []))
-                if inj and inj.get("surface") == "tool_description":
-                    _plant_in_tools(msg, inj)
+                plant_in_list(msg, inj)          # rug_pull needs a push channel; not on HTTP
                 extra["served_hashes"] = hash_tools(msg["result"].get("tools", []))
-            elif method == "tools/call" and inj and inj.get("surface") == "tool_result" \
+            elif method == "tools/call" and inj and inj.get("surface") in CALL_SURFACES \
                     and tool == inj.get("target_tool"):
                 with self._lock:
                     idx, self._target_calls = self._target_calls, self._target_calls + 1
                 text = _payload_for_call(inj, idx)
                 if text is not None:
-                    _plant_in_result(msg, {"payload": text})
+                    plant_in_call(msg, inj, text)
                     extra["injected"] = True
         self.rec.write(dir="server->client", msg=msg, http={"status": status}, **extra)
         return msg

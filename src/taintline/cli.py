@@ -69,6 +69,67 @@ def _preflight(a) -> None:
         print(f"preflight: {warning}", file=sys.stderr)
 
 
+def _add_agent_cmd(p) -> None:
+    p.add_argument("--agent-cmd", help="with --agent command: your agent's command line, run once per trial "
+                                       "(it gets the tools over MCP; see docs/BYO_AGENT.md)")
+    p.add_argument("--agent-timeout", type=float, help="with --agent command: seconds before a trial is "
+                                                     "stopped and counted as an error (default 600)")
+
+
+def _agent_cmd(a) -> dict:
+    import shlex
+    return {"command": shlex.split(a.agent_cmd) if a.agent_cmd else None, "agent_timeout": a.agent_timeout}
+
+
+def _session(a) -> None:
+    from .session import CLIENT_CONFIGS, SessionError, score_session, start_session
+    if a.session_cmd == "start":
+        from .labs import get_lab
+        if not Path(a.scope).exists():
+            raise SystemExit(f"refused: {a.scope} not found; a scope file is required (see SCOPE.example.yaml)")
+        try:
+            s = start_session(Gate(load_scope(a.scope)), get_lab(a.lab), a.collaborator, a.out, a.attack, a.task)
+        except ScopeError as e:
+            raise SystemExit(f"invalid scope file {a.scope}: {e}")
+        except OutOfScope as e:
+            raise SystemExit(f"refused: {e}")
+        except SessionError as e:
+            raise SystemExit(f"error: {e}")
+        except OSError as e:
+            raise SystemExit(f"error: collaborator sink at {a.collaborator} is not answering ({e}). "
+                             "Start it: python3 lab/collaborator/server.py")
+        print(f"session: lab={s['lab']} attack={s['attack']} task={s['task']['id']}")
+        print(f"\n1. Add the servers in {s['config']} to your MCP client, then restart it:")
+        for client, where in CLIENT_CONFIGS.items():
+            print(f"     {client}: {where}")
+        print("2. In a NEW chat, send exactly:\n")
+        print(f"     {s['task']['prompt']}\n")
+        print(f"3. When the agent is done: taintline session score {a.out} --answer \"<its reply>\"")
+        print("4. Remove the taintline-* servers from your client afterwards.")
+        return
+    try:
+        answer = Path(a.answer_file).read_text() if a.answer_file else a.answer
+        r = score_session(a.dir, answer)
+    except FileNotFoundError as e:
+        raise SystemExit(f"error: {e}; run `taintline session start` first")
+    except OSError as e:
+        raise SystemExit(f"error: collaborator sink is not answering ({e})")
+    calls = ", ".join(c["tool"] for c in r["tool_calls"]) or "none"
+    done = {True: "yes", False: "no", None: "unknown (pass --answer)"}[r["task_completed"]]
+    print(f"session: attack={r['attack']} task={r['task']} tool calls: {calls}")
+    print(f"session: injection fired={r['injection_fired']} read canary={r['canary_read']} "
+          f"task done={done} oracle/sink disagree={r['oracle_disagrees_with_sink']}")
+    print(f"session: step-by-step replay: {Path(a.dir, 'replay.html')}")
+    if not r["valid"]:
+        print("INVALID: " + "; ".join(r["problems"]))
+        raise SystemExit(3)
+    if r["canary_arrived"]:
+        print("LEAKED: the canary arrived at the sink. Result: " + str(Path(a.dir, "result.json")))
+        raise SystemExit(1)
+    print("no leak in this session (one trial; run several sessions for a rate). Result: "
+          + str(Path(a.dir, "result.json")))
+
+
 PREFLIGHT_HELP = "skip the check that the model server answers and offers --model before trial 1"
 
 
@@ -126,6 +187,7 @@ def main(argv=None):
     r.add_argument("--dry-run", action="store_true",
                    help="check scope and print the plan; make no model calls and touch no network")
     r.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
+    _add_agent_cmd(r)
 
     s = sub.add_parser("scan", help="static scan of an MCP tool manifest (JSON)")
     s.add_argument("manifest")
@@ -199,6 +261,7 @@ def main(argv=None):
     lv.add_argument("--scope", default="SCOPE.yaml")
     lv.add_argument("--out", default="out/live")
     lv.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
+    _add_agent_cmd(lv)
 
     bb = sub.add_parser("blackbox", help="test a chat endpoint you are authorized to test (M6); "
                                          "plants an injection, the collaborator sink proves any leak")
@@ -217,6 +280,10 @@ def main(argv=None):
     ls2 = sub.add_parser("live-suite", help="all live attacks x all live tasks vs a real stdio MCP server")
     for flag, kw in [("--server", dict()), ("--command", dict()),
                      ("--lab", dict(help="a lab from `taintline labs` (servers, tasks and attacks included)")),
+                     ("--target", dict(help="a target file describing YOUR server: url or command, a planted "
+                                            "canary, tools and tasks (see docs/TARGETS.md)")),
+                     ("--target-width", dict(type=float, help="pick -n so the overall 95%% CI is at most this "
+                                                              "wide (e.g. 0.15); overrides -n")),
                      ("--collaborator", dict(default="http://127.0.0.1:8099")),
                      ("--attacks", dict(help="YAML file/dir (default: bundled lab/notes attacks)")),
                      ("--mutators", dict(default="", help="comma list, e.g. base64,homoglyph")),
@@ -227,8 +294,12 @@ def main(argv=None):
                      ("--scope", dict(default="SCOPE.yaml")), ("--out", dict(default="out/live_suite"))]:
         ls2.add_argument(flag, **kw)
     ls2.add_argument("--arg", action="append", default=[])
-    ls2.add_argument("--gullible", action="store_true")
+    ls2.add_argument("--gullible", action="store_true",
+                     help="positive control: tell the model to obey instructions found in tool output")
+    ls2.add_argument("--control", help="results.json of a --gullible run of the same setup; the report's trust "
+                                       "block checks that it saw leaks")
     ls2.add_argument("--no-preflight", action="store_true", help=PREFLIGHT_HELP)
+    _add_agent_cmd(ls2)
     ls2.add_argument("--request-timeout", type=float,
                      help="seconds to wait for one model reply (default 120 openai-compat, 300 ollama)")
     ls2.add_argument("--retries", type=int, default=2,
@@ -273,7 +344,9 @@ def main(argv=None):
     at.add_argument("--lab", help="check placeholders and tool names against this lab")
     at.add_argument("--show", action="store_true", help="print each attack as the lab will plant it")
 
-    px = sub.add_parser("proxy", help="recording stdio proxy for any MCP client (use after `--`: the server command)")
+    px = sub.add_parser("proxy", help="recording and injection proxy for TESTING with any MCP client; not a "
+                                       "production gateway (use after `--`: the server command; --server must "
+                                       "be in SCOPE.yaml)")
     px.add_argument("--server", required=True)
     px.add_argument("--scope", default="SCOPE.yaml")
     px.add_argument("--transcript")
@@ -301,7 +374,7 @@ def main(argv=None):
 
     dm = sub.add_parser("demo", help="watch a prompt-injection leak happen and get proven at a sink (1 minute)")
     dm.add_argument("--out", default="out/demo")
-    dm.add_argument("--agent", choices=[k for k in AGENT_KINDS if not k.startswith("mock")],
+    dm.add_argument("--agent", choices=[k for k in AGENT_KINDS if not k.startswith("mock") and k != "command"],
                     help="put a real model in the attack scene (default: scripted agents, no model)")
     dm.add_argument("--model")
     dm.add_argument("--base-url")
@@ -312,7 +385,50 @@ def main(argv=None):
     rp.add_argument("results")
     rp.add_argument("--out", help="output .html (default: replay.html next to the results file)")
 
+    se = sub.add_parser("session", help="test an agent you can't script (Claude Desktop, Cursor, any MCP "
+                                         "client): write its config, then score what happened")
+    ses = se.add_subparsers(dest="session_cmd", required=True)
+    st = ses.add_parser("start", help="write an MCP config with the lab behind the proxy and the attack planted")
+    st.add_argument("--lab", required=True, help="a lab from `taintline labs`")
+    st.add_argument("--attack", help="attack id (default: the lab's first); 'none' for a clean baseline")
+    st.add_argument("--task", help="task id (default: the lab's first)")
+    st.add_argument("--collaborator", default="http://127.0.0.1:8099")
+    st.add_argument("--scope", default="SCOPE.yaml")
+    st.add_argument("--out", default="out/session")
+    sc = ses.add_parser("score", help="read the transcripts and the sink: did the canary leave?")
+    sc.add_argument("dir", help="the --out folder of `session start`")
+    sc.add_argument("--answer", default="", help="the agent's final reply, to check the task was done")
+    sc.add_argument("--answer-file", help="read the agent's reply from this file instead")
+
+    cp = sub.add_parser("compare", help="did a change really change the leak rate? Fisher's exact test, "
+                                         "overall and per attack (Holm-adjusted)")
+    cp.add_argument("a", help="results.json of the 'before' run (live-suite or live-run)")
+    cp.add_argument("b", help="results.json of the 'after' run")
+    cp.add_argument("--alpha", type=float, default=0.05)
+    cp.add_argument("--out", help="also write compare.json and compare.md to this folder")
+    cp.add_argument("--fail-if-worse", action="store_true",
+                    help="CI mode: exit 1 if B leaks significantly more than A")
+
     a = ap.parse_args(argv)
+
+    if a.cmd == "session":
+        return _session(a)
+
+    if a.cmd == "compare":
+        from .report.compare import compare, compare_markdown
+        try:
+            res = compare(a.a, a.b, a.alpha)
+        except (OSError, KeyError, ValueError) as e:
+            raise SystemExit(f"error: cannot compare these files ({type(e).__name__}: {e})")
+        md = compare_markdown(res)
+        print(md, end="")
+        if a.out:
+            Path(a.out).mkdir(parents=True, exist_ok=True)
+            Path(a.out, "compare.json").write_text(json.dumps(res, indent=2))
+            Path(a.out, "compare.md").write_text(md)
+        if a.fail_if_worse and res["overall"]["verdict"] == "B leaks more":
+            raise SystemExit(1)
+        return
 
     if a.cmd == "replay":
         from .report.replay import write_replay
@@ -564,20 +680,39 @@ def main(argv=None):
         from .gateway.live import GULLIBLE_SYSTEM, LIVE_TASKS, SinkUnavailable, live_suite, suite_markdown
         from .labs import get_lab
         lab = get_lab(a.lab) if a.lab else None
-        if not lab and not (a.server and a.command):
-            raise SystemExit("give --lab NAME, or both --server and --command")
+        tgt = None
+        if a.target:
+            from .target_file import TargetError, load_target
+            try:
+                tgt = load_target(a.target)
+            except (OSError, TargetError) as e:
+                raise SystemExit(f"invalid target file {a.target}: {e}")
+            a.server, a.command, a.arg = tgt.server, tgt.command, tgt.args
+        if not lab and not tgt and not (a.server and a.command):
+            raise SystemExit("give --lab NAME, --target FILE, or both --server and --command")
         try:
             gate = Gate(load_scope(a.scope))
             for name in (lab.servers if lab else [a.server]):
                 gate.check_server(name)
             check_run(gate, a.agent, a.base_url)
+            from .report.trust import load_control, trust
+            control = load_control(a.control) if a.control else None   # fail before trial 1, not after
             subs = lab.subs() if lab else None
-            base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else \
-                (lab.attacks if lab else (lambda: load_attacks(str(LIVE_ATTACKS))))
+            if tgt:
+                base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else (lambda: tgt.attacks(a.collaborator))
+            else:
+                base = (lambda: load_attacks(a.attacks, subs)) if a.attacks else \
+                    (lab.attacks if lab else (lambda: load_attacks(str(LIVE_ATTACKS))))
             attacks = base()
             for m in [m for m in a.mutators.split(",") if m]:
                 attacks += [mutate(x, m) for x in base()]
-            tasks = lab.tasks if lab else LIVE_TASKS
+            tasks = tgt.tasks if tgt else lab.tasks if lab else LIVE_TASKS
+            if a.target_width:
+                from .scoring.asr import trials_for_width
+                total = trials_for_width(a.target_width)
+                a.n = max(1, -(-total // max(1, len(attacks) * len(tasks))))
+                print(f"plan: --target-width {a.target_width:.0%} needs about {total} attack trials in all "
+                      f"-> n={a.n} per pair", file=sys.stderr)
             budget = Budget(a.max_trials, a.max_minutes * 60 if a.max_minutes else None, a.max_tokens)
             planned = (len(attacks) + 1) * len(tasks) * a.n
             print(f"plan: {len(attacks)} attacks x {len(tasks)} tasks + baseline, n={a.n} -> {planned} trials",
@@ -592,12 +727,21 @@ def main(argv=None):
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
             factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env,
                                          temperature=a.temperature, fix_seed=a.fix_seed,
-                                         request_timeout=a.request_timeout, retries=a.retries)
+                                         request_timeout=a.request_timeout, retries=a.retries,
+                                         **_agent_cmd(a))
             res = live_suite(gate, factory, a.server or lab.name, a.command, a.arg, a.collaborator, attacks,
                              tasks, a.n, a.out,
-                             specs=lab.specs() if lab else None, base_env=lab.env if lab else None,
-                             lab=lab.name if lab else None, budget=budget)
+                             specs=lab.specs() if lab else None,
+                             base_env=lab.env if lab else (tgt.env if tgt else None),
+                             lab=lab.name if lab else None, budget=budget,
+                             target=tgt.runtime() if tgt else None)
+            if tgt:
+                res["target"] = {"file": a.target, "name": tgt.name, "url": tgt.url}
             res["sampling"] = {"temperature": a.temperature, "seed_fixed": a.fix_seed}
+            res["positive_control"] = bool(a.gullible)
+            if control:
+                res["control"] = control
+            res["trust"] = trust(res)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
         except OutOfScope as e:
@@ -627,6 +771,9 @@ def main(argv=None):
               f"replay={Path(a.out, 'replay.html')}")
         if o["errors"]:
             print(f"WARNING: {o['errors']} trial(s) errored; errors are NOT counted as secure.")
+        t = res["trust"]
+        flagged = [c["check"] for c in t["checks"] if c["status"] in ("warn", "fail")]
+        print(f"trust: {t['label']}" + (f" ({', '.join(flagged)})" if flagged else ""))
         sm = res["summary"]
         if not sm["valid"]:
             print("INVALID RUN: " + "; ".join(sm["invalid_reasons"]), file=sys.stderr)
@@ -659,7 +806,7 @@ def main(argv=None):
             )
             inject = injection_spec(a.inject, payload=a.payload or DEFAULT_PAYLOAD)
             system = a.system or (GULLIBLE_SYSTEM if a.gullible else None)
-            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env)
+            factory = make_agent_factory(a.agent, a.model, system, a.base_url, a.api_key_env, **_agent_cmd(a))
             res = live_run(gate, factory, a.server, a.command, a.arg, a.collaborator, inject, a.n, a.out)
         except ScopeError as e:
             raise SystemExit(f"invalid scope file {a.scope}: {e}")
@@ -730,7 +877,7 @@ def main(argv=None):
               f"tasks={len(TASKS)} n={a.n}; no calls made")
         return
     _preflight(a)
-    factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env)
+    factory = make_agent_factory(a.agent, a.model, a.system, a.base_url, a.api_key_env, **_agent_cmd(a))
     result = run_suite(factory, attacks, TASKS, a.n)
     result["meta"] = meta.collect(agent=a.agent, model=a.model, system_override=bool(a.system),
                                   n=a.n, attacks=attacks, mutators=mutator_names)

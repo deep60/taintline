@@ -127,7 +127,7 @@ def test_gullible_flag_sets_system_prompt(tmp_path, monkeypatch):
     import taintline.cli as cli
     from taintline.gateway import live
     seen = {}
-    monkeypatch.setattr(cli, "make_agent_factory", lambda kind, model, system, *a: seen.setdefault("s", system))
+    monkeypatch.setattr(cli, "make_agent_factory", lambda kind, model, system, *a, **k: seen.setdefault("s", system))
     monkeypatch.setattr(live, "live_run", lambda *a, **k: {
         "n": 1, "canary_arrived": 0, "arrival_rate": 0, "ci": [0, 0], "canary_read": 0,
         "canary_in_answer": 0, "oracle_success": 0, "oracle_disagrees_with_sink": 0, "errors": 0, "trials": []})
@@ -182,7 +182,8 @@ def test_live_attack_library_loads_with_expected_surfaces():
     from taintline.attacks import load_attacks
     from taintline.cli import LIVE_ATTACKS
     a = load_attacks(str(LIVE_ATTACKS))
-    assert len(a) >= 8 and {x.surface for x in a} == {"tool_result", "tool_description"}
+    assert len(a) >= 11 and {x.surface for x in a} == {"tool_result", "tool_description", "tool_error",
+                                                        "tool_schema", "rug_pull"}
     assert all("evil.example" in x.payload for x in a)
 
 

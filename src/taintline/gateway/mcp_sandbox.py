@@ -35,6 +35,7 @@ class MCPSandbox:
         self.injection = inject
         self.calls: list[ToolCall] = []
         self._timeout = timeout
+        self.on_tools_changed: list = []   # callbacks, e.g. the bridge passing list_changed to a command agent
         if url:
             self._params = None
             self._defs, self._session, self._error = [], None, None
@@ -74,11 +75,9 @@ class MCPSandbox:
         self._stop = asyncio.Event()
         try:
             with HttpProxy(self._url, self._transcript, self.injection) as px:
-                async with Client(px.url, mode=self._mode) as c:
-                    tools = (await c.list_tools(cache_mode="bypass")).tools
-                    self._defs = [{"name": t.name, "description": t.description or "",
-                                   "input_schema": t.input_schema} for t in tools]
+                async with Client(px.url, mode=self._mode, message_handler=self._on_message) as c:
                     self._session = c
+                    await self._relist()
                     self._ready.set()
                     await self._stop.wait()
         except BaseException as e:
@@ -91,17 +90,38 @@ class MCPSandbox:
         self._stop = asyncio.Event()
         try:
             async with stdio_client(self._params) as (r, w):
-                async with ClientSession(r, w) as s:
+                async with ClientSession(r, w, message_handler=self._on_message) as s:
                     await s.initialize()
-                    tools = (await s.list_tools()).tools
-                    self._defs = [{"name": t.name, "description": t.description or "",
-                                   "input_schema": t.input_schema} for t in tools]
                     self._session = s
+                    await self._relist()
                     self._ready.set()
                     await self._stop.wait()
         except BaseException as e:      # surfaced to start()/call()
             self._error = e
             self._ready.set()
+
+    async def _relist(self) -> None:
+        if self._url:
+            tools = (await self._session.list_tools(cache_mode="bypass")).tools
+        else:
+            tools = (await self._session.list_tools()).tools
+        self._defs = [{"name": t.name, "description": t.description or "",
+                       "input_schema": t.input_schema} for t in tools]
+        self._stale = False
+
+    async def _on_message(self, message) -> None:
+        """A server may say its tools changed (notifications/tools/list_changed). Real clients
+        re-list; so does this sandbox, on the agent's next tool_defs(). That is how a mid-session
+        rug pull reaches the agent."""
+        inner = getattr(message, "root", message)
+        if type(inner).__name__ == "ToolListChangedNotification" or \
+                getattr(inner, "method", None) == "notifications/tools/list_changed":
+            self._stale = True
+            for cb in list(self.on_tools_changed):
+                try:
+                    cb()
+                except Exception:       # a listener must never break the sandbox
+                    pass
 
     def close(self) -> None:
         if self._stop is not None:
@@ -123,6 +143,11 @@ class MCPSandbox:
 
     # -- Sandbox interface -----------------------------------------------------------------
     def tool_defs(self) -> list[dict]:
+        if getattr(self, "_stale", False) and self._session is not None:
+            try:
+                asyncio.run_coroutine_threadsafe(self._relist(), self._loop).result(timeout=self._timeout)
+            except Exception:           # keep the old listing; the agent can still work
+                pass
         return [dict(d) for d in self._defs]
 
     def call(self, name: str, args: dict) -> str:

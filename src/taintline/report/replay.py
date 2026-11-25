@@ -186,6 +186,20 @@ def suite_html(res: dict, payloads: dict[str, str] | None = None, prompts: dict[
     return _page("Taintline replay", sub, stats, sections)
 
 
+def session_html(res: dict, session: dict, hits: list[dict]) -> str:
+    """One closed-agent session (taintline session score) as a single scene."""
+    t = {"canary_arrived": res["canary_arrived"], "sink_contact": res["sink_contact"],
+         "canary": next(iter(session["canaries"].values()), None), "answer": res.get("answer") or "",
+         "trace": res.get("tool_calls") or [], "sink_hits": hits,
+         "error": "; ".join(res["problems"]) if not res.get("valid", True) else None}
+    payload = (session.get("injection") or {}).get("payload")
+    stats = [("tool calls", str(len(t["trace"]))), ("injection fired", "yes" if res["injection_fired"] else "no"),
+             ("secret delivered", "yes" if res["canary_arrived"] else "no"),
+             ("valid", "yes" if res.get("valid", True) else "no")]
+    scene = _scene(f"attack {res['attack']}", f"task {res['task']}", t, session["task"]["prompt"], payload, True)
+    return _page("Taintline session replay", f"Lab {res['lab']} · your own client", stats, [("Session", [scene])])
+
+
 def write_replay(res: dict, path: str | Path) -> Path:
     """Pick the right view for a demo or a live-suite result, recovering payloads and prompts from the lab."""
     path = Path(path)

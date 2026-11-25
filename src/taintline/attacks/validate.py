@@ -10,8 +10,10 @@ import yaml
 from ..sandbox import ATTACKER_EMAIL, ATTACKER_URL
 from .loader import Attack, load_attacks
 
-SURFACES = {"tool_result", "tool_description", "native", "page", "email", "web", "file"}
-LIVE_SURFACES = {"tool_result", "tool_description", "native", "page"}
+LIVE_SURFACES = {"tool_result", "tool_error", "tool_description", "tool_schema", "rug_pull", "native", "page"}
+SURFACES = LIVE_SURFACES | {"email", "web", "file"}
+NEEDS_TARGET = {"tool_result", "tool_error", "tool_description", "tool_schema", "rug_pull"}
+CALL_SURFACES = {"tool_result", "tool_error"}
 PAGE_VECTORS = {"visible_text", "css_hidden", "offscreen", "white_on_white", "html_comment", "alt_text",
                 "aria_label", "form_field", "hidden_input"}
 TARGETS = {"api_key", "ssn"}
@@ -67,7 +69,7 @@ def _check(a: Attack, tools: set | None, servers: set | None, live: bool) -> lis
         out.append("effort must be 1..5")
     if a.target not in TARGETS:
         out.append(f"target must be one of {sorted(TARGETS)}")
-    if a.surface in ("tool_result", "tool_description") and not a.target_tool:
+    if a.surface in NEEDS_TARGET and not a.target_tool:
         out.append(f"{a.surface} attacks need target_tool")
     if a.surface == "page" and (a.env or {}).get("PAGE_VECTOR") not in PAGE_VECTORS:
         out.append(f"page attacks need env PAGE_VECTOR, one of {sorted(PAGE_VECTORS)}")
@@ -75,10 +77,10 @@ def _check(a: Attack, tools: set | None, servers: set | None, live: bool) -> lis
         out.append("empty payload")
     if a.parts is not None and (not isinstance(a.parts, list) or not all(isinstance(x, str) and x.strip() for x in a.parts)):
         out.append("parts must be a list of non-empty strings")
-    if a.parts and a.surface != "tool_result":
-        out.append("parts (split payload) only work on the tool_result surface")
-    if a.after and a.surface != "tool_result":
-        out.append("after (delayed payload) only works on the tool_result surface")
+    if a.parts and a.surface not in CALL_SURFACES:
+        out.append("parts (split payload) only work on the tool_result and tool_error surfaces")
+    if a.after and a.surface not in CALL_SURFACES:
+        out.append("after (delayed payload) only works on the tool_result and tool_error surfaces")
     if not isinstance(a.after, int) or a.after < 0:
         out.append("after must be an integer >= 0")
     text = a.payload + " ".join(a.parts or [])

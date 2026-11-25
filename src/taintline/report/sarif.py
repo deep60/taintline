@@ -102,8 +102,10 @@ def from_drift(server: str, report: dict) -> list[Finding]:
 def from_audit(res: dict) -> list[Finding]:
     """Config-audit findings carry their own file and line, so code scanning can annotate the config."""
     return [Finding(f"config/{f['kind']}", SEVERITY_LEVEL.get(f["severity"], "warning"),
-                    f"{f['message']} [{f['server']}]. Fix: {f['fix']}", f["server"], "",
-                    key=f"{f['file']}|{f['message']}", props={"client": f["client"]},
+                    f"{f['message']} [{f['server']}]. Fix: {f['fix']}"
+                    + (f" Prove: {f['prove']['command']}" if f.get("prove") else ""), f["server"], "",
+                    key=f"{f['file']}|{f['message']}",
+                    props={"client": f["client"], **({"prove": f["prove"]["command"]} if f.get("prove") else {})},
                     uri=f["file"], line=f["line"]) for f in res.get("findings", [])]
 
 
