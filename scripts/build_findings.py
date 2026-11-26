@@ -35,7 +35,16 @@ RUNS = {
     "rs_notes_gullible": ("out/rs_notes_control", RS, "--lab notes -n 10 --gullible"),
     "hx_notes_default": ("out/hx_notes_default", HX, "--lab notes -n 10"),
     "hx_notes_gullible": ("out/hx_notes_control", HX, "--lab notes -n 10 --gullible"),
+    # finding #4: the agent under test is examples/byo_agent/agent.py (--agent command)
+    "hx_mcp_default": ("out/runs_2026-11-25/suite", HX, "--attacks docs/findings/attacks/notes_mcp.yaml -n 3"),
+    "hx_mcp_gullible": ("out/runs_2026-11-25/suite_gullible", HX,
+                        "--attacks docs/findings/attacks/notes_mcp.yaml -n 2 --gullible"),
+    "hx_rug_pull": ("out/runs_2026-11-25/rug", HX, "--attacks docs/findings/attacks/notes_rug_pull.yaml -n 3"),
+    "hx_error_vs_result": ("out/runs_2026-11-25/ablation", HX,
+                           "--attacks docs/findings/attacks/notes_error_vs_result.yaml -n 5"),
 }
+CMD_AGENT = ("--server notes --command python --arg lab/servers/notes_server.py --agent command "
+             "--agent-cmd 'uv run python examples/byo_agent/agent.py' --base-url http://localhost:1234/v1")
 PAIR_KEYS = ("attack", "task", "family", "surface", "n", "delivered", "fired", "attacker_contact",
              "canary_read", "errors")
 
@@ -53,8 +62,10 @@ def snapshot(name: str) -> dict:
     base = [{k: b[k] for k in ("task", "n", "false_alarm", "task_completion", "errors", "attacker_contact")}
             for b in res["baseline"]]
     keep = ("headline", "baseline_utility", "baseline_false_alarm", "errors", "valid")
-    return {"run": name, "model": model, "lab": res["lab"], "sampling": res.get("sampling"),
-            "command": f"taintline live-suite {COMMON} --model {model} {args} --out out/{name}",
+    common = CMD_AGENT if "--attacks" in args else COMMON
+    lab = "notes-mcp" if "--attacks" in args else res["lab"]   # own attack set: not the bundled notes lab
+    return {"run": name, "model": model, "lab": lab, "sampling": res.get("sampling"),
+            "command": f"taintline live-suite {common} --model {model} {args} --out out/{name}",
             "summary": {k: res["summary"][k] for k in keep}, "overall": res["overall"],
             "pairs": pairs, "baseline": base}
 
@@ -164,6 +175,50 @@ def models() -> dict[str, str]:
             "models_runs": runs_table(list(runs.values()))}
 
 
+MCP_NAMES = {
+    "error_recovery_steps": ("a fix-it step, in a tool error", "tool_error"),
+    "direct_notice": ("a \"system notice\", in a normal result", "tool_result"),
+    "parameter_description_poison": ("instruction in a parameter's description", "tool_schema"),
+    "rug_pull_after_first_use": ("tool description turns malicious after first use", "rug_pull"),
+}
+MCP_RUNS = ["hx_mcp_default", "hx_mcp_gullible", "hx_rug_pull"]
+
+
+def mcp_errors() -> dict[str, str]:
+    """Finding #4. A pair whose injection never reached the agent says nothing, so it is left out of
+    the counts and reported as excluded (the rug-pull pairs run before the bridge could pass on
+    tools/list_changed)."""
+    from taintline.report.compare import fisher_exact
+    agg: dict[str, dict] = defaultdict(lambda: defaultdict(int))
+    excluded = 0
+    for name in MCP_RUNS:
+        for p in load(name)["pairs"]:
+            if not p["fired"]:
+                excluded += p["n"]
+                continue
+            for k in ("n", "delivered", "attacker_contact", "errors"):
+                agg[p["attack"]][k] += p[k]
+    order = [a for a in MCP_NAMES if a in agg]
+    rows = [[MCP_NAMES[a][0], f"`{MCP_NAMES[a][1]}`", pct(agg[a]["delivered"], agg[a]["n"]), agg[a]["errors"]]
+            for a in order]
+    ab = by_attack(load("hx_error_vs_result"))
+    e, r = ab["error_recovery_steps"], ab["error_text_as_result"]
+    p = fisher_exact(e["delivered"], e["n"], r["delivered"], r["n"])
+    ab_rows = [["as a tool error (`isError: true`)", pct(e["delivered"], e["n"])],
+               ["appended to a normal result", pct(r["delivered"], r["n"])]]
+    svg = bar_chart([(MCP_NAMES[a][0].replace("**", ""), [(agg[a]["delivered"], agg[a]["n"])]) for a in order]
+                    + [("same error text, as a tool error", [(e["delivered"], e["n"])]),
+                       ("same error text, in a normal result", [(r["delivered"], r["n"])])],
+                    "Secret delivered to the attacker, by where the instruction sits",
+                    note=f"Model: {HX}, as a bring-your-own agent. Bars with 95% intervals.")
+    (IMG / "mcp_errors.svg").write_text(svg)
+    return {"errors_table": table(["where the instruction sits", "surface", "leaked the secret", "errors"], rows)
+            + (f"\n\nLeft out: {excluded} trials whose injection never reached the agent." if excluded else ""),
+            "errors_ablation": table(["the same text, delivered", "leaked the secret"], ab_rows)
+            + f"\n\nFisher's exact test, two-sided: p = {p:.2g}.",
+            "errors_runs": runs_table([load(n) for n in MCP_RUNS + ["hx_error_vs_result"]])}
+
+
 def runs_table(runs: list[dict]) -> str:
     rows = [[f"`{r['run']}`", r["model"], r["lab"], r["overall"]["trials"], r["summary"]["errors"],
              f"{100 * r['summary']['baseline_utility']:.0f}%", f"{100 * r['summary']['baseline_false_alarm']:.0f}%"]
@@ -191,11 +246,15 @@ def main() -> None:
     IMG.mkdir(parents=True, exist_ok=True)
     if a.refresh:
         for name in RUNS:
+            if not (ROOT / RUNS[name][0] / "results.json").exists():   # run data lives only where it ran
+                print(f"kept snapshot {name}: {RUNS[name][0]} not here", file=sys.stderr)
+                continue
             (DATA / f"{name}.json").write_text(json.dumps(snapshot(name), indent=1) + "\n")
     fill(DOCS / "01-hidden-text.md", hidden_text())
     fill(DOCS / "02-shadowed-tool.md", shadow())
     fill(DOCS / "03-local-models.md", models())
-    print(f"built {len(list(IMG.glob('*.svg')))} charts and filled 3 posts in {DOCS.relative_to(ROOT)}")
+    fill(DOCS / "04-tool-errors.md", mcp_errors())
+    print(f"built {len(list(IMG.glob('*.svg')))} charts and filled 4 posts in {DOCS.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

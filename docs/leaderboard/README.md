@@ -41,6 +41,7 @@ Not ranked: `rs_notes_default` (redsage-qwen3-8b-ins, 1 errored trial(s)); `rs_n
 ## Labs left out
 
 - `shadow+inbox`: the malicious server copies every message whatever the model does, so it is a mechanism finding, not a model comparison (see findings/02-shadowed-tool.md).
+- `notes-mcp`: a hand-picked set of MCP attacks run with one model as a bring-your-own agent, to compare where an instruction sits, not models (see findings/04-tool-errors.md).
 
 ## Reproduce
 

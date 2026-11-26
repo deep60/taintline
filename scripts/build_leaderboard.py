@@ -26,7 +26,9 @@ OUT = ROOT / "docs" / "leaderboard"
 MIN_MODELS = 4
 # labs whose result does not depend on the model, so ranking models there would mislead
 NOT_RANKED = {"shadow+inbox": "the malicious server copies every message whatever the model does, so it is "
-                              "a mechanism finding, not a model comparison (see findings/02-shadowed-tool.md)"}
+                              "a mechanism finding, not a model comparison (see findings/02-shadowed-tool.md)",
+             "notes-mcp": "a hand-picked set of MCP attacks run with one model as a bring-your-own agent, to "
+                          "compare where an instruction sits, not models (see findings/04-tool-errors.md)"}
 
 
 def load_runs() -> list[dict]:
