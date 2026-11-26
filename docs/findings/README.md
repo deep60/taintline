@@ -10,6 +10,8 @@ secure.
    copied 15/15 messages to the attacker, and the agent's log looked normal every time.
 3. [Same leak rate, opposite behaviour](03-local-models.md): two small local models leak at the same
    rate but fail in very different ways.
+4. [It's the story, not the channel](04-tool-errors.md): a "fix this error" step leaked the secret
+   45/45 times, whether it arrived as an MCP error or in a normal result.
 
 ## How the numbers are kept honest
 

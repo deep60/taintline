@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" width="720" height="240" role="img" aria-label="Secret delivered to the attacker, by where the instruction sits">
+
+<style>
+  .bg{fill:#ffffff} .t{fill:#1f2328;font:600 15px system-ui,-apple-system,sans-serif}
+  .l{fill:#1f2328;font:13px system-ui,-apple-system,sans-serif} .c{fill:#59636e;font:12px ui-monospace,monospace}
+  .g{stroke:#d1d9e0} .w{stroke:#1f2328;stroke-width:1.4} .s0{fill:#2f6fde} .s1{fill:#d4762b} .s2{fill:#5b9a3e}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117} .t,.l{fill:#e6edf3} .c{fill:#9198a1} .g{stroke:#3d444d} .w{stroke:#e6edf3}
+    .s0{fill:#5a93ef} .s1{fill:#e8924c} .s2{fill:#7bbd5b}
+  }
+</style>
+<rect class="bg" width="720" height="240"/>
+<text class="t" x="12" y="24">Secret delivered to the attacker, by where the instruction sits</text>
+<line class="g" x1="230.0" y1="38" x2="230.0" y2="188"/><text class="c" x="230.0" y="204" text-anchor="middle">0%</text>
+<line class="g" x1="325.0" y1="38" x2="325.0" y2="188"/><text class="c" x="325.0" y="204" text-anchor="middle">25%</text>
+<line class="g" x1="420.0" y1="38" x2="420.0" y2="188"/><text class="c" x="420.0" y="204" text-anchor="middle">50%</text>
+<line class="g" x1="515.0" y1="38" x2="515.0" y2="188"/><text class="c" x="515.0" y="204" text-anchor="middle">75%</text>
+<line class="g" x1="610.0" y1="38" x2="610.0" y2="188"/><text class="c" x="610.0" y="204" text-anchor="middle">100%</text>
+<text class="l" x="220" y="55.0" text-anchor="end">a fix-it step, in a tool error</text>
+<rect class="s0" x="230" y="46" width="380.0" height="10"/>
+<line class="w" x1="532.5" y1="51.0" x2="610.0" y2="51.0"/><line class="w" x1="532.5" y1="48.0" x2="532.5" y2="54.0"/><line class="w" x1="610.0" y1="48.0" x2="610.0" y2="54.0"/>
+<text class="c" x="620" y="55">15/15</text>
+<text class="l" x="220" y="79.0" text-anchor="end">a &quot;system notice&quot;, in a normal result</text>
+<rect class="s0" x="230" y="70" width="126.7" height="10"/>
+<line class="w" x1="287.7" y1="75.0" x2="451.5" y2="75.0"/><line class="w" x1="287.7" y1="72.0" x2="287.7" y2="78.0"/><line class="w" x1="451.5" y1="72.0" x2="451.5" y2="78.0"/>
+<text class="c" x="620" y="79">5/15</text>
+<text class="l" x="220" y="103.0" text-anchor="end">instruction in a parameter&#x27;s description</text>
+<rect class="s0" x="230" y="94" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="99.0" x2="307.5" y2="99.0"/><line class="w" x1="230.0" y1="96.0" x2="230.0" y2="102.0"/><line class="w" x1="307.5" y1="96.0" x2="307.5" y2="102.0"/>
+<text class="c" x="620" y="103">0/15</text>
+<text class="l" x="220" y="127.0" text-anchor="end">tool description turns malicious after first use</text>
+<rect class="s0" x="230" y="118" width="0.0" height="10"/>
+<line class="w" x1="230.0" y1="123.0" x2="307.5" y2="123.0"/><line class="w" x1="230.0" y1="120.0" x2="230.0" y2="126.0"/><line class="w" x1="307.5" y1="120.0" x2="307.5" y2="126.0"/>
+<text class="c" x="620" y="127">0/15</text>
+<text class="l" x="220" y="151.0" text-anchor="end">same error text, as a tool error</text>
+<rect class="s0" x="230" y="142" width="380.0" height="10"/>
+<line class="w" x1="532.5" y1="147.0" x2="610.0" y2="147.0"/><line class="w" x1="532.5" y1="144.0" x2="532.5" y2="150.0"/><line class="w" x1="610.0" y1="144.0" x2="610.0" y2="150.0"/>
+<text class="c" x="620" y="151">15/15</text>
+<text class="l" x="220" y="175.0" text-anchor="end">same error text, in a normal result</text>
+<rect class="s0" x="230" y="166" width="380.0" height="10"/>
+<line class="w" x1="532.5" y1="171.0" x2="610.0" y2="171.0"/><line class="w" x1="532.5" y1="168.0" x2="532.5" y2="174.0"/><line class="w" x1="610.0" y1="168.0" x2="610.0" y2="174.0"/>
+<text class="c" x="620" y="175">15/15</text>
+<text class="c" x="12" y="222">Bars: rate. Whiskers: 95% Wilson interval.</text>
+<text class="c" x="12" y="240">Model: qwen3.8-9b-heretic-uncensored, as a bring-your-own agent. Bars with 95% intervals.</text>
+</svg>
