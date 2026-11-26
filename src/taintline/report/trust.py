@@ -76,7 +76,8 @@ def trust(res: dict) -> dict:
            f"{o.get('disagreements', 0)} trial(s) where the tool-log oracle and the sink disagree"),
         _control(res),
         _c("Oracle checked by humans", "info",
-           "not yet: the sink oracle has not been compared with human labels (docs/oracle_validation.md)"),
+           "once: 30 hand labels matched the oracle on every row (notes lab, one local 9B model, "
+           "2026-11-25); other labs, models and evasions not yet (docs/oracle_validation.md)"),
     ]
     statuses = {c["status"] for c in checks}
     verdict = "unreliable" if "fail" in statuses else "with_care" if "warn" in statuses else "solid"

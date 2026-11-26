@@ -24,7 +24,7 @@ then build the enterprise layer with design partners.
 |---|---|
 | Unpushed work | The branch is 4 commits ahead of GitHub, 6 files are uncommitted (the preflight check), and GitHub `main` is at a very old commit. |
 | Stale README | It says Streamable HTTP, SARIF and black-box are "not built yet"; all three exist. |
-| G0 oracle validation | `docs/oracle_validation.md` is an empty template. Every published number depends on it. |
+| G0 oracle validation | Passed once (2026-11-25): 30 labels, 0 mismatches, notes lab and one local model. Other labs, frontier models and encoded leaks still to label. |
 | Release never run | `release.yml` and the Action have not run on GitHub; nothing is on PyPI. |
 | Browser lab | A text model of a browser, not a real one (no Playwright MCP). |
 | Black-box mode | Tested only against the local mock copilot. |

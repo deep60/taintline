@@ -49,6 +49,9 @@ version may change result formats (each results file carries its own `schema_ver
   be published there.
 - `session score` writes a step-by-step `replay.html` of the session.
 - `taintline proxy` says what it is: a testing proxy, not a production gateway.
+- Gate G0 passed: 30 hand-labeled traces from a real-model run matched the oracle on every row
+  (notes lab, one local model). Reports say so under "Oracle checked by humans". See
+  [docs/oracle_validation.md](docs/oracle_validation.md).
 
 ### Changed
 - Tool capability detection (`scan`, trifecta checks) reads tool names as words and input-schema
