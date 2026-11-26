@@ -35,7 +35,8 @@ def test_chart_draws_no_whisker_for_an_empty_bar():
 def test_published_numbers_match_the_committed_snapshots():
     """Every generated block in docs/findings must equal what the snapshots produce now."""
     b = _builder()
-    blocks = {"01-hidden-text.md": b.hidden_text(), "02-shadowed-tool.md": b.shadow(), "03-local-models.md": b.models()}
+    blocks = {"01-hidden-text.md": b.hidden_text(), "02-shadowed-tool.md": b.shadow(), "03-local-models.md": b.models(),
+              "04-tool-errors.md": b.mcp_errors()}
     for post, gen in blocks.items():
         text = (b.DOCS / post).read_text()
         for name, body in gen.items():
