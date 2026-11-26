@@ -52,7 +52,7 @@ but haven't been used on someone else's system or on GitHub yet.
 | SARIF 2.1.0 and OCSF output, signed webhooks | `--sarif`, `taintline sarif`, `taintline ocsf`, `--notify-url` | upload to GitHub code scanning |
 | GitHub Action for audit and monitor | [action.yml](action.yml), [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md) | a run on GitHub |
 | Black-box test of a chat endpoint you're authorized to test | `taintline blackbox` | a run on a real copilot |
-| Check the oracle against human labels | `label-sheet`, `gate0`, `rescore` | 30 labels ([docs/oracle_validation.md](docs/oracle_validation.md)) |
+| Check the oracle against human labels | `label-sheet`, `gate0`, `rescore` | done once: 30 labels, 0 mismatches, one lab and one model ([docs/oracle_validation.md](docs/oracle_validation.md)); more labs and models |
 | Docker image, PyPI package, release workflow | `docker run --rm --network none ghcr.io/deep60/taintline`, [docs/RELEASE.md](docs/RELEASE.md) | first release |
 
 **Not built:** frontier-model benchmarks (Claude, GPT, Gemini), a real browser MCP server
@@ -118,7 +118,8 @@ uv run taintline monitor --server notes --command python --arg lab/servers/notes
 - `mock-*` agents are not models; they only prove the harness works.
 - `--agent anthropic` is untested against the live API.
 - Scoring weights are assumptions. The labs are small and simulated (8 labs, 24 tasks).
-- The oracle has not yet been validated by human labeling (`docs/oracle_validation.md`).
+- The oracle has been checked against human labels once: 30 traces from one lab and one local
+  model, all matching (`docs/oracle_validation.md`). Other labs, models and encoded leaks are not yet covered.
 - Results so far come from local 7–20B models only.
 - Only test systems you own or are authorized to test.
 
